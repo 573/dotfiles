@@ -1,3 +1,7 @@
+# DISCLAIMER
+
+I mainly copied this for learning reasons, see https://github.com/573/dotfiles/wiki/yubikey-image.nix as a starter.
+
 # My personal bootstrap process
 
 For bootstraping on [legacy operating systems](https://github.com/Mic92/dotfiles/wiki#bootstrap-for-legacy-operating-systems)
