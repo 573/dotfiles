@@ -1,16 +1,20 @@
-{
-  pkgs,
-  config,
-  ...
+{ pkgs
+, config
+, ...
 }: {
   systemd.services.tts = {
-    after = ["network.target"];
-    wantedBy = ["multi-user.target"];
+    after = [ "network.target" ];
+    wantedBy = [ "multi-user.target" ];
+    path = [ pkgs.espeak ];
+    environment.HOME = "/var/lib/tts";
     serviceConfig = {
+      StateDirectory = "tts";
+      DynamicUser = true;
+      User = "tts";
+      Group = "tts";
       ExecStart = ''
-        ${pkgs.tts}/bin/tts-server --model_name tts_models/en/ljspeech/tacotron2-DCA --port 5004
+        ${pkgs.tts}/bin/tts-server --model_name tts_models/en/ljspeech/vits--neon --port 5004
       '';
-      User = "joerg";
     };
   };
 

@@ -1,4 +1,4 @@
-{
+{ lib, ... }: {
   uci.settings = {
     # The block below will translate to the following uci settings:
     # root@OpenWrt:~# uci show dropbear
@@ -31,10 +31,12 @@
     # Note that once you define a section i.e. network.wan, than all existing
     # values of this section are unset before applying the new values
 
-    system.system = [{
-      _type = "system";
-      hostname = "rauter";
-    }];
+    system.system = [
+      {
+        _type = "system";
+        hostname = "rauter";
+      }
+    ];
 
     network = {
       wan = {
@@ -59,7 +61,7 @@
           name = "br-lan";
           type = "bridge";
           # list options are also supported
-          ports = ["lan1" "lan2" "lan3" "lan4"];
+          ports = [ "lan1" "lan2" "lan3" "lan4" ];
         }
         {
           _type = "device";
@@ -72,14 +74,14 @@
     };
     wireless = {
       radio0 = {
-         _type = "wifi-device";
-         type = "mac80211";
-         path = "platform/18000000.wmac";
-         channel = "1";
-         band = "2g";
-         htmode = "HT20";
-         country = "DE";
-         cell_density = "0";
+        _type = "wifi-device";
+        type = "mac80211";
+        path = "platform/18000000.wmac";
+        channel = "1";
+        band = "2g";
+        htmode = "HT20";
+        country = "DE";
+        cell_density = "0";
       };
       radio1 = {
         _type = "wifi-device";
@@ -122,6 +124,224 @@
         "prism"
       ];
     };
+
+    dhcp.host = lib.imap0
+      (id: host:
+        rec {
+          _type = "host";
+          dns = "1";
+          ip = "192.168.1.${hostid}";
+          hostid = toString (id + 2);
+        }
+        // host) [
+      {
+        name = "rock";
+        mac = "4a:4e:25:af:9e:0f";
+      }
+      {
+        name = "turingmachine";
+        mac = "c4:03:a8:86:a2:95";
+      }
+      {
+        name = "bernie";
+        mac = "14:18:C3:BB:6F:07";
+      }
+      {
+        name = "oneplus-nord";
+        mac = "D0:49:7C:36:5B:80";
+      }
+      {
+        name = "livingroom";
+        mac = "7C:DF:A1:B5:11:B0";
+      }
+    ];
+
+    ddns =
+      let
+        common = {
+          _type = "service";
+          enabled = "1";
+          service_name = "bind-nsupdate";
+          lookup_host = "rauter.thalheim.io";
+          domain = "rauter.thalheim.io.";
+          ip_source = "network";
+          dns_server = "ns1.thalheim.io";
+          use_syslog = "2";
+          username = "hmac-sha256:rauter";
+          password = "@tsig_key@";
+          check_unit = "minutes";
+          force_unit = "minutes";
+          retry_unit = "seconds";
+        };
+      in
+      {
+        global = {
+          _type = "ddns";
+          ddns_dateformat = "%F %R";
+          ddns_loglines = "250";
+          ddns_rundir = "/var/run/ddns";
+          ddns_logdir = "/var/log/ddns";
+          upd_privateip = "0";
+        };
+
+        myddns_ipv4 =
+          common
+          // {
+            use_ipv6 = "0";
+            ip_network = "wan";
+            interface = "wan";
+          };
+
+        myddns_ipv6 =
+          common
+          // {
+            use_ipv6 = "1";
+            ip_network = "wan_6";
+            interface = "wan_6";
+          };
+      };
+
+    prometheus-node-exporter-lua.main = {
+      _type = "prometheus-node-exporter-lua";
+      listen_interface = "vpn";
+      listen_port = "9273";
+    };
+
+    firewall.redirect = [{
+      _type = "redirect";
+      enabled = "1";
+      name = "Forward-ESPHome";
+      src = "wan";
+      dest = "lan";
+      dest_ip = "192.168.1.6"; # livingroom
+      proto = "tcp";
+      src_dport = 6053;
+      dest_port = 6053;
+    }];
+
+    firewall.rule = [
+      # Not needed for pppoe
+      #{
+      #  _type = "rule";
+      #  name = "Allow-DHCP-Renew";
+      #  proto = "udp";
+      #  src = "wan";
+      #  dest_port = 68;
+      #  family = "ipv4";
+      #  target = "ACCEPT";
+      #}
+      # only needed for ISP iptv
+      #{
+      #  _type = "rule";
+      #  name = "Allow-IGMP";
+      #  proto = "icmp";
+      #  src = "wan";
+      #  icmp_type = "echo-request";
+      #  family = "ipv4";
+      #  target = "ACCEPT";
+      #}
+      {
+        _type = "rule";
+        name = "Allow-Ping";
+        proto = "icmp";
+        src = "wan";
+        icmp_type = "echo-request";
+        family = "ipv4";
+        target = "ACCEPT";
+      }
+      {
+        _type = "rule";
+        name = "Allow-DHCPv6";
+        src = "wan";
+        proto = "udp";
+        src_ip = "fc00::/6";
+        dest_ip = "fc00::/6";
+        dest_port = 546;
+        family = "ipv6";
+        target = "ACCEPT";
+      }
+      # "The WAN port should at least respond to MLD queries as otherwise a
+      # snooping bridge/switch might drop traffic."
+      {
+        _type = "rule";
+        name = "Allow-MLD";
+        src = "wan";
+        proto = "icmp";
+        src_ip = "fe80::/10";
+        icmp_type = [ "130/0" "131/0" "132/0" "143/0" ];
+        family = "ipv6";
+        target = "ACCEPT";
+      }
+      {
+        _type = "rule";
+        name = "Allow-ICMPv6-Input";
+        src = "wan";
+        proto = "icmp";
+        src_ip = "fe80::/10";
+        icmp_type = [
+          "echo-request"
+          "echo-reply"
+          "destination-unreachable"
+          "packet-too-big"
+          "time-exceeded"
+          "bad-header"
+          "unknown-header-type"
+          "router-solicitation"
+          "neighbour-solicitation"
+          "router-advertisement"
+          "neighbour-advertisement"
+        ];
+        limit = "1000/sec";
+        family = "ipv6";
+        target = "ACCEPT";
+      }
+      {
+        _type = "rule";
+        name = "Allow-ICMPv6-Forward";
+        src = "wan";
+        dest = "*";
+        icmp_type = [
+          "echo-request"
+          "echo-reply"
+          "destination-unreachable"
+          "packet-too-big"
+          "time-exceeded"
+          "bad-header"
+          "unknown-header-type"
+        ];
+        limit = "1000/sec";
+        family = "ipv6";
+        target = "ACCEPT";
+      }
+      # no need for ipsec
+      #{
+      #  _type = "rule";
+      #  name = "Allow-IPSec-ESP";
+      #  src = "wan";
+      #  dest = "lan";
+      #  proto = "esp";
+      #  target = "ACCEPT";
+      #}
+      #{
+      #  _type = "rule";
+      #  name = "Allow-ISAKMP";
+      #  src = "wan";
+      #  dest = "lan";
+      #  dest_port = "500";
+      #  proto = "udp";
+      #  target = "ACCEPT";
+      #}
+      # own rules follow here
+      {
+        _type = "rule";
+        name = "Allow-Tinc";
+        src = "wan";
+        dest = "lan";
+        dest_port = "655";
+        family = "ipv6";
+        target = "ACCEPT";
+      }
+    ];
   };
   uci.secrets = {
     sops.files = [

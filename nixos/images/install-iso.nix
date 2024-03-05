@@ -1,6 +1,6 @@
 # build with:
 # $ nix-build '<nixpkgs/nixos>' -A config.system.build.isoImage -I nixos-config=./install-iso.nix
-# $ dd if=result/iso/nixos-*.iso of=/dev/sdb
+# $ dd status=progress bs=4M conv=fsync oflag=direct iflag=direct if=result/iso/nixos-*.iso of=/dev/sdb
 # iso>
 # iso> sgdisk -n 1:0:+1000M -N 2 -t 1:ef00 -t 2:8304 /dev/nvme0n1
 # iso> mkfs.vfat -b32 /dev/nvme0n1p1 -N NIXOS_BOOT
@@ -13,16 +13,12 @@
 # iso> mount -t zfs zroot/root/nixos /mnt
 # iso> mount -t zfs zroot/root/home /mnt
 # iso> mount /dev/nvme0n1p1 /mnt/boot
-# iso> nix-shell -p git -p nixFlakes --run 'nixos-install --impure --flake /mnt/home/joerg/.homesick/repos/dotfiles#turingmachine'
-{
-  config,
-  lib,
-  pkgs,
-  modulesPath,
-  ...
-}: {
+# iso> nix-shell -p git -p nix --run 'nixos-install --impure --flake /mnt/home/joerg/.homesick/repos/dotfiles#turingmachine'
+{ modulesPath, ... }: {
   imports = [
-    <nixpkgs/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix>
+    (modulesPath + "/installer/cd-dvd/installation-cd-minimal.nix")
+    # saves disk by including nixpkgs in the installer
+    { system.installer.channel.enable = false; }
     ./base-config.nix
     ./zfs.nix
   ];

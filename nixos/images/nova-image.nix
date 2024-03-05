@@ -1,4 +1,4 @@
-{...}:
+{ ... }:
 # build openstack image:
 # $ nix-build '<nixpkgs/nixos>' -A config.system.build.novaImage --arg configuration "{ imports = [ ./nova-image.nix ]; }"
 {
@@ -14,5 +14,5 @@
     The "root" account has an empty password.
   '';
   # Allow the user to log in as root without a password.
-  users.extraUsers.root.initialHashedPassword = "";
+  users.users.root.initialHashedPassword = "";
 }

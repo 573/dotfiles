@@ -1,30 +1,27 @@
-{pkgs, ...}: {
-  imports = [
-    ../modules/users.nix
-    ../modules/mosh.nix
-    ../modules/tor-ssh.nix
-    ../modules/telegraf.nix
-    ../modules/rpi3.nix
-    ../modules/promtail.nix
+{ pkgs, ... }: {
+  nixpkgs.localSystem.system = "aarch64-linux";
 
-    ./modules/borgbackup.nix
+  imports = [
+    ./hardware-configuration.nix
     ./modules/samba.nix
     ./modules/rsyncd.nix
-    ./modules/sops.nix
+    ./modules/photoprism.nix
+
+    ../modules/borgbackup.nix
+    ../modules/users.nix
+    ../modules/mosh.nix
+    ../modules/sshd/tor.nix
+    ../modules/promtail.nix
   ];
 
   documentation.enable = false;
-  boot.initrd.includeDefaultModules = false;
-
-  fileSystems."/mnt/hdd" = {
-    device = "UUID=1d377ab7-65ca-492d-9ea4-620034230192";
-    fsType = "ext4";
-    options = ["defaults" "nofail" "x-systemd.device-timeouts=2"];
-  };
+  clan.deployment.requireExplicitUpdate = true;
 
   networking.hostName = "matchbox";
 
   time.timeZone = "UTC";
+
+  services.getty.autologinUser = "root";
 
   environment.systemPackages = with pkgs; [
     tmux
@@ -40,6 +37,24 @@
 
   systemd.services.update-prefetch.enable = false;
 
-  system.stateVersion = "18.09";
-  networking.dhcpcd.enable = true;
+  system.stateVersion = "23.11";
+
+  networking.dhcpcd.enable = false;
+  systemd.network.networks.ethernet.extraConfig = ''
+    [Match]
+    Type = ether
+
+    [Network]
+    DHCP = both
+    LLMNR = true
+    IPv4LL = true
+    LLDP = true
+    IPv6AcceptRA = true
+    IPv6Token = ::fd87:20d6:a932:6605
+
+    [DHCP]
+    UseHostname = false
+    RouteMetric = 512
+  '';
+  services.resolved.enable = false;
 }

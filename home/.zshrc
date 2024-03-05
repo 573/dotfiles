@@ -20,6 +20,8 @@ if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then
   # shellcheck disable=SC1091
   . ~/.nix-profile/etc/profile.d/nix.sh
 fi
+
+
 if [[ -d ~/git/nixpkgs ]]; then
   export NIX_PATH="nixpkgs=$HOME/git/nixpkgs:$NIX_PATH"
 fi
@@ -36,10 +38,6 @@ fi
 if [[ -S /nix/var/nix/daemon-socket/socket ]]; then
   export NIX_REMOTE=daemon
 fi
-
-function faketty {
-  script -qfc "$(printf "%q " "$@")";
-}
 
 export NIX_USER_PROFILE_DIR=${NIX_USER_PROFILE_DIR:-/nix/var/nix/profiles/per-user/${USER}}
 export NIX_PROFILES=${NIX_PROFILES:-$HOME/.nix-profile}
@@ -70,6 +68,7 @@ if [[ -n $HOST && "$__host__" != "$HOST" ]]; then
   tmux set -g status-bg "colour$(string_hash "$HOST" 255)"
   export __host__=$HOST
 fi
+
 
 ##  Helpers
 # xalias - only supposed to be used with simple aliases.
@@ -141,9 +140,26 @@ rust-doc(){
 }
 
 wttr() {
-  local request="wttr.in/${1-muc}"
+  local request="wttr.in/${1-Neufahrn}"
   [ "$COLUMNS" -lt 125 ] && request+='?n'
   curl -H "Accept-Language: ${LANG%_*}" --compressed "$request"
+}
+mensa() {
+  curl -s "https://tum-dev.github.io/eat-api/mensa-garching/$(date +'%Y')/$(date +'%U').json" | jq -j .days\[$((($(date +%-u)-1)))\].dishes'[]| .dish_type,": ", .name,"\n"'
+}
+edge-gpt() {
+  if [ $# -eq 0 ]; then
+    (
+      tmp=$(mktemp -d)
+      trap 'rm -rf "$tmp"' EXIT
+      nvim "$tmp/prompt.txt"
+      local prompt_text=$(<"$tmp/prompt.txt")
+      rbw get bing-gpt > "$tmp/cookies.json"
+      edge-gpt --prompt "$prompt_text" --cookie-file "$tmp/cookies.json"
+    )
+  else
+    command edge-gpt "$@"
+  fi
 }
 kpaste() {
   arg=cat
@@ -155,16 +171,47 @@ kpaste() {
   "${arg[@]}" | curl -sS http://p.r --data-binary @- | \
     sed '$ {p;s|http://p.r|https://p.krebsco.de|}'
 }
-xalias hm-switch="nix run $HOME/.homesick/repos/dotfiles#hm-switch --"
-xalias hm-build="nix run $HOME/.homesick/repos/dotfiles#hm-build --"
-nix-index-update() {
-  filename="index-x86_64-$(uname | tr A-Z a-z)"
-  mkdir -p ~/.cache/nix-index
-  pushd ~/.cache/nix-index
-  # -N will only download a new version if there is an update.
-  wget -q -N https://github.com/Mic92/nix-index-database/releases/latest/download/$filename
-  ln -f $filename files
-  popd
+
+hm(){
+  nix run "$HOME/.homesick/repos/dotfiles#hm" -- "$@"
+}
+# merge after CI is green with mergify
+merge-after-ci() {
+  if [[ -n ${commands[merge-after-ci]} ]]; then
+    command merge-after-ci "$@"
+    return
+  fi
+  if [[ -n ${commands[treefmt]} ]] && ! treefmt --fail-on-change; then
+    return
+  fi
+  branch=$(id -un)-ci
+  git push --force origin "HEAD:$branch"
+  targetBranch=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name)
+  if [[ $(git remote) =~ upstream ]]; then
+    remoteName=upstream
+  else
+    remoteName=origin
+  fi
+  if [[ $(gh pr view --json state --template '{{.state}}' "$branch") != "OPEN" ]]; then
+    # BUFFER is an internal variable used by edit-command-line
+    # We fill it with commit subject and body seperated by newlines
+    tmpdir=$(mktemp -d)
+    trap 'rm -rf "$tmpdir"' EXIT
+    git log --reverse --pretty="format:%s%n%n%b%n%n" "$remoteName/$targetBranch..HEAD" > "$tmpdir/COMMIT_EDITMSG"
+    ${EDITOR:-vim} "$tmpdir/COMMIT_EDITMSG"
+    msg=$(<"$tmpdir/COMMIT_EDITMSG")
+    firstLine=${msg%%$'\n'*}
+    rest=${msg#*$'\n'}
+    if [[ $firstLine == $rest ]]; then
+      rest=""
+    fi
+    gh pr create --title "$firstLine" --body "$body" --base "$targetBranch" --head "$branch" --label merge-queue
+  fi
+}
+passgen() {
+  local pass
+  pass=$(nix run nixpkgs#xkcdpass -- -d '-' -n 3 -C capitalize "$@")
+  echo "${pass}$((RANDOM % 10))"
 }
 
 ## Options
@@ -176,7 +223,6 @@ setopt auto_cd
 setopt correct
 setopt multios
 setopt cdablevarS
-setopt extended_glob
 autoload -U url-quote-magic
 zle -N self-insert url-quote-magic
 bindkey "^[m" copy-prev-shell-word
@@ -201,53 +247,49 @@ bindkey -e
 autoload edit-command-line
 zle -N edit-command-line
 bindkey '^X^e' edit-command-line
+bindkey "^[[3~" delete-char # bind delete key
 
 ## Completion
 autoload colors; colors;
-autoload -zU compinit
+
+zstyle ':autocomplete:*' fzf-completion yes
+zstyle ':autocomplete:*' insert-unambiguous yes
+zstyle ':autocomplete:*' widget-style menu-select
+zstyle -e ':autocomplete:*' list-lines 'reply=( $(( LINES / 3 )) )'
+
+# recent directory completion is sometimes a bit confusing
++autocomplete:recent-directories() { }
+
+bindkey "${key[Up]}" up-line-or-search # https://nixos.wiki/index.php?title=Zsh&oldid=11045#Zsh-autocomplete_not_working
+source ~/.zsh-autocomplete/zsh-autocomplete.plugin.zsh
+
+bindkey '\t' menu-select "$terminfo[kcbt]" menu-select
+bindkey -M menuselect '\t' menu-complete "$terminfo[kcbt]" reverse-menu-complete
+
+zstyle ':completion:*:paths' path-completion yes
+
 fignore=(.DS_Store $fignore)
 [[ -d ~/.zsh-completions/src ]] && fpath+=(~/.zsh-completions/src)
 [[ -d ~/.nix-profile/share/zsh/site-functions ]] && fpath+=(~/.nix-profile/share/zsh/site-functions)
 [[ -d /run/current-system/sw/share/zsh/site-functions/ ]] && fpath+=(/run/current-system/sw/share/zsh/site-functions/)
 
-# only update zsh completion once a day
-if [[ -n ${ZDOTDIR:-${HOME}}/$ZSH_COMPDUMP(#qN.mh+24) ]]; then
-  compinit -d $ZSH_COMPDUMP
-else
-  compinit -C
-fi
-zmodload -i zsh/complist
 setopt complete_in_word
 unsetopt always_to_end
-zstyle ':completion:*' insert-tab pending
-zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
-highlights='${PREFIX:+=(#bi)($PREFIX:t)(?)*==31=1;32}':${(s.:.)LS_COLORS}}
-highlights2='=(#bi) #([0-9]#) #([^ ]#) #([^ ]#) ##*($PREFIX)*==1;31=1;35=1;33=1;32=}'
-zstyle -e ':completion:*' list-colors 'if [[ $words[1] != kill && $words[1] != strace ]]; then reply=( "'$highlights'" ); else reply=( "'$highlights2'" ); fi'
-unset highlights
-zstyle ':completion:*' squeeze-slashes true
-zstyle ':completion:*' expand 'yes'
-zstyle ':completion:*:match:*' original only
-zstyle ':completion:*:approximate:*' max-errors 1 numeric
-zstyle ':completion::complete:*' use-cache 1
-zstyle ':completion::complete:*' cache-path ~/.zsh/cache/
-zstyle ':completion:*:cd:*' ignore-parents parent pwd
-zstyle ':completion:*:kill:*:processes' list-colors '=(#b) #([0-9]#) ([0-9a-z-]#)*=01;34=0=01'
-zstyle ':completion:*:*:*:processes' command "ps -u $(whoami) -o pid,user,comm -w -w"
 
 ## Prompt
 PURE_GIT_UNTRACKED_DIRTY=0 PURE_GIT_PULL=0
-
-PURE_PROMPT_SYMBOL="%F{blue}╰─ %(?.%F{green}.%F{red})%%%f"
-source $HOME/.zsh-pure/async.zsh
-source $HOME/.zsh-pure/pure.zsh
+#
+PURE_PROMPT_SYMBOL="%(?.%F{green}.%F{red})%%%f"
+fpath+=($HOME/.zsh-pure)
 zstyle :prompt:pure:path color yellow
 zstyle :prompt:pure:git:branch color yellow
 zstyle :prompt:pure:user color cyan
 zstyle :prompt:pure:host color yellow
 zstyle :prompt:pure:git:branch:cached color red
-# non-zero exit code in right prompt
+## non-zero exit code in right prompt
 RPS1='%(?.%F{magenta}.%F{red}(%?%) %F{magenta})'
+autoload -U promptinit; promptinit
+prompt pure
 
 ## Aliases
 # Basic commands
@@ -255,7 +297,7 @@ alias zcat='zcat -f'
 alias dd='dd status=progress'
 if [[ -n ${commands[rg]} ]]; then
   rg() {
-    command rg --sort path --pretty --smart-case --fixed-strings "$@" | less -R
+    command rg -C1 --sort path --pretty --smart-case --fixed-strings "$@" | less -R
   }
   ag() {
     echo "use rg instead"
@@ -270,14 +312,23 @@ if [[ -n ${commands[zoxide]} ]]; then
 else
   alias z="builtin cd"
 fi
+if [[ -n ${commands[nom-build]} ]]; then
+  alias nix-build=nom-build
+  alias nix=nom
+fi
 alias pgrep='pgrep -a'
 
 # System tools
 xalias top='htop'
-xalias tig='lazygit'
+xalias lg='lazygit'
 xalias dig='q'
 alias free='free -m'
 alias fuser="fuser -v"
+if [[ -n ${commands[procs]} ]]; then
+  alias ps='procs'
+else
+  alias ps='ps auxf'
+fi
 if [[ -n ${commands[dust]} ]]; then
   du() {
     args=()
@@ -294,27 +345,40 @@ else
 fi
 alias df='df -hT'
 # File management
-if [[ -n ${commands[exa]} ]]; then
+if [[ -n ${commands[lsd]} ]]; then
   if [ -n "${commands[vivid]}" ]; then
-    export LS_COLORS="$(vivid generate molokai)"
+    export LS_COLORS="$(vivid generate solarized-light)"
   fi
-  alias ls="exa --classify --icons"
+  alias ls="lsd --classify --date=relative"
 elif [[ $OSTYPE == freebsd* ]] ||  [[ $OSTYPE == darwin* ]]; then
   alias ls='ls -G'
 else
   alias ls='ls --color=auto --classify --human-readable'
 fi
 alias sl=ls
-alias tempdir='cd $(TMPDIR=/tmp mktemp -d);'
+function tempdir() {
+  local random_adjective=$(shuf -n 1 $HOME/.zsh/random-adjective.txt)
+  local random_name=$(shuf -n 1 $HOME/.zsh/random-name.txt)
+
+  cd "$(mktemp -d "/tmp/$random_adjective-$random_name-XXXXXX")"
+}
 alias rm='rm -rv'
 function cp() {
   if [[ "$#" -ne 1 ]] || [[ ! -f "$1" ]]; then
-    command cp --reflink=auto -arv "$@"
+    if [[ -n ${commands[xcp]} ]]; then
+      command xcp -r "$@"
+    else
+      command cp --reflink=auto -arv "$@"
+    fi
     return
   fi
   newfilename="$1"
   vared newfilename
-  command cp --reflink=auto -arv -- "$1" "$newfilename"
+  if [[ -n ${commands[xcp]} ]]; then
+    command xcp -r "$1" "$newfilename"
+  else
+    command cp --reflink=auto -arv -- "$1" "$newfilename"
+  fi
 }
 alias ln="nocorrect ln"
 function mv() {
@@ -337,10 +401,12 @@ ip() {
     fi
 }
 xalias objdump='objdump -M intel'
-alias wget='noglob wget'
-alias curl='noglob curl --proto-default https'
+alias curl='noglob curl --compressed --proto-default https'
 alias nix='noglob nix'
-alias nixos-rebuild='noglob nixos-rebuild'
+alias nom='noglob nom'
+alias nixos-remote='noglob nixos-remote'
+alias nixos-rebuild='noglob sudo nixos-rebuild'
+alias wget='noglob wget --continue --show-progress --progress=bar:force:noscroll'
 if [[ -n ${commands[hub]} ]]; then
   alias git='noglob hub'
 else
@@ -353,28 +419,48 @@ alias su='su - '
 xalias ctl='sudo systemctl'
 alias gdb='gdb --quiet --args'
 alias readelf='readelf -W'
-# Editors
-[[ -n ${commands[vi]} ]] && alias vi=vim
-xalias vim="nvim"
 xalias xclip="xclip -selection clipboard"
 xalias cloc=scc
+# higher priority to get no packet loss
+xalias mumble="nice -10 mumble"
 
-if [[ -n ${commands[nix]} ]]; then
-  n() {
-    NIX_RUN_ARGS="$@${NIX_RUN_ARGS+ }${NIX_RUN_ARGS}" nix shell "$@" -f '<nixpkgs>' -c zsh
-  }
-  nbuild() {
-    nix build --no-link "$@"
-    nix path-info "$@"
+if [[ -n ${commands[shell-gpt]} ]]; then
+  shell-gpt() {
+    export OPENAI_API_KEY=$(rbw get openai-api-key)
+    command shell-gpt "$@"
   }
 fi
 
+n() {
+  NIX_RUN_ARGS="$@${NIX_RUN_ARGS+ }${NIX_RUN_ARGS}" nix shell "$@" -f '<nixpkgs>' -c zsh
+}
+
 nix-call-package() {
-    if [ $# != 1 ]; then
+    if [ $# -lt 1 ]; then
         echo "USAGE: $0" >&2
         return 1
     fi
-    nix-build -E "with import <nixpkgs> {}; pkgs.callPackage $1 {}"
+    file=$1
+    shift
+    nix-build -E "with import <nixpkgs> {}; pkgs.callPackage $file {}" "$@"
+}
+nixos-build() {
+    if [ $# -lt 1 ]; then
+        echo "USAGE: $0 machineName" >&2
+        return 1
+    fi
+    name=$1
+    shift
+
+    command nixos-rebuild build --flake ".#$name" "$@"
+}
+flake-check() {
+    if [ $# -lt 1 ]; then
+      nix flake check
+    fi
+    for arg in "$@"; do
+      nix build ".#checks.$(nix eval --impure --raw --expr builtins.currentSystem).$1"
+    done
 }
 
 nix-pkg-path() {
@@ -397,9 +483,9 @@ nix-unpack() {
 }
 
 killp() {
-  local pid=$(ps -ef | sed 1d | eval "fzf ${FZF_DEFAULT_OPTS} -m --header='[kill:process]'" | awk '{print $2}')
+  local pid=$(procs --color=always "$1" | fzf --ansi -m --header='[kill:process]' --header-lines 2 | awk '{print $1}')
   if [[ "$pid" != "" ]]; then
-    echo $pid | xargs sudo kill -${1:-9}
+    echo $pid | xargs sudo kill -${2:-9}
     killp
   fi
 }
@@ -447,7 +533,6 @@ path=(
     $HOME/.cabal/bin
     $HOME/.cargo/bin
     $HOME/go/bin
-    $HOME/.go/bin
     $HOME/.gem/ruby/*.*.*/bin(NOn[1])
     # python
     $HOME/.local/bin/
@@ -460,20 +545,29 @@ path=($^path(N))
 export PATH
 cdpath=( ~/git )
 # Prefered programs
-export BROWSER=firefox
-export TERMINAL=wezterm
+if [ -z "$WAYLAND_DISPLAY" ] || [ -z "$DISPLAY" ]; then
+  export BROWSER=echo
+elif [ -n "${commands[firefox]}" ]; then
+  export BROWSER=firefox
+fi
+export TERMINAL=footclient
 export PICTUREVIEW=eog
-if [[ -n ${commands[emacseditor]} ]] && [[ -n $XDG_RUNTIME_DIR ]]; then
+
+if [[ -n ${commands[nvim-open]} ]]; then
+  export EDITOR=nvim-open
+  alias vim="nvim-open"
+elif [[ -n ${commands[nvim]} ]]; then
+  export EDITOR=nvim
+  alias vim="nvim"
+elif [[ -n ${commands[emacseditor]} ]]; then
   export EDITOR=emacseditor
-  alias vim=emacseditor
 else
   export EDITOR=vim
 fi
-
 if [[ -n ${command[nvim]} ]]; then
-    export ALTERNATE_EDITOR=nvim
+  export ALTERNATE_EDITOR=nvim
 elif [[ -n ${command[vim]} ]]; then
-    export ALTERNATE_EDITOR=vim
+  export ALTERNATE_EDITOR=vim
 fi
 
 export VISUAL=$EDITOR
@@ -496,11 +590,9 @@ export XDG_VIDEOS_DIR="$HOME/Videos"
 export ERRFILE=~/.xsession-errors
 # Antialising
 export _JAVA_OPTIONS="$_JAVA_OPTIONS -Dawt.useSystemAAFontSettings=lcd -Dswing.defaultlaf=com.sun.java.swing.plaf.gtk.GTKLookAndFeel"
-# To enable Graphic Hardware acceleration
-#export LIBGL_ALWAYS_INDIRECT=1
-export INTEL_BATCH=1
-# Enable Pulse for SDL
-export SDL_AUDIODRIVER=pulse
+# Enable Pipewire for SDL
+export SDL_AUDIODRIVER=pipewire
+export ALSOFT_DRIVERS=pipewire
 # fix broken xdg-open
 export GDMSESSION=1 GNOME_DESKTOP_SESSION_ID=1
 # less
@@ -519,11 +611,7 @@ export MANWIDTH=80
 # If the execution of a command takes longer than
 # REPORTTIME (in seconds),  time statistics are printed
 export REPORTTIME=4
-if [[ $OSTYPE == darwin* ]] || [[ $OSTYPE == freebsd* ]]; then
-  export LC_ALL=en_US.UTF-8
-else
-  export LC_ALL=en_DK.UTF-8
-fi
+export LC_ALL=en_US.UTF-8
 export PERL_CPANM_OPT="--local-lib=~/.perl5"
 export PERL5LIB=~/.perl5/lib/perl5
 
@@ -543,12 +631,9 @@ if [[ -S "/run/user/${UID}/ssh-agent" ]]; then
   export SSH_AUTH_SOCK="/run/user/${UID}/ssh-agent"
 fi
 
-if [[ -n ${commands[lesspipe.sh]} ]]; then
-  export LESSOPEN="| lesspipe.sh %s"
-fi
-
 unlock_root(){
-  bw get password aceb6d01-5bb5-4ff9-b40d-2cd8bee51417 | ssh -tt -v root@eve.i -p 2222
+  pw=$(rbw get 'zfs encryption')
+  ssh root@eve.i -p 2222 "echo ${pw} | systemd-tty-ask-password-agent"
 }
 # Autoinstall Bundle
 bundle() {
@@ -575,7 +660,7 @@ retry() {
   done
 }
 say() {
-  _say() { curl -sSG http://tts.r/api/tts --data-urlencode text@- | mpv --no-resume-playback -; }
+  _say() { curl -sSG http://tts.r/api/tts --data-urlencode text@- | mpv --keep-open=no --no-resume-playback -; }
   if [[ "$#" -eq 0 ]]; then
     _say
   else
@@ -589,14 +674,6 @@ own() {
     chown -R "$USER:$(id -gn)" "$@"
   fi
 }
-# usage
-# vil file:20 -> opens file on line 20
-vil() {
-  setopt shwordsplit
-  IFS=':' ARGS=($@)
-  unsetopt shwordsplit
-  vim +${ARGS[2]} ${ARGS[1]}
-}
 # force output to be on a single line
 ss() {
   # -p requires sudo to see all processes
@@ -607,23 +684,37 @@ ss() {
   fi
 }
 sieve-edit() {
-    local passwordfd
-    exec {passwordfd} < <(rbw get Eve)
-    nix shell -f '<nixpkgs>' sieve-connect -c sieve-connect --passwordfd $passwordfd -s imap.thalheim.io -u joerg@higgsboson.tk --remotesieve Filter --edit
-    exec {passwordfd}>&-
+  local passwordfd
+  password=$(rbw get Eve)
+  exec {passwordfd} < <(echo "$password")
+  nix run nixpkgs#sieve-connect -- --passwordfd $passwordfd -s imap.thalheim.io -u joerg@higgsboson.tk --remotesieve Filter --edit
+  exec {passwordfd}>&-
 }
 # Autossh - try to connect every 0.5 secs (modulo timeouts)
 sssh(){ while true; do command ssh -q "$@"; [ $? -ne 0 ] && break || sleep 0.5; done; }
+# SSH to ephemeral machine without storing host key
+ssh-ephermal(){ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$@"; }
+
 dumbssh(){ TERM=screen-256color ssh "$@"; }
-moshlogin(){
-  if ssh-add -L | grep -q "no identities"; then
-    ssh-add ~/.ssh/id_{rsa,ecdsa,ed25519}
-  fi
-  ssh -v eve killall mosh-server
-  mosh -A eve.mosh
-}
 # List directory after changing directory
 chpwd() { ls; }
+
+# OSC-133
+precmd() {
+  print -Pn "\e]133;A\e\\"
+}
+function osc7-pwd() {
+    emulate -L zsh # also sets localoptions for us
+    setopt extendedglob
+    local LC_ALL=C
+    printf '\e]7;file://%s%s\e\' $HOST ${PWD//(#m)([^@-Za-z&-;_~])/%${(l:2::0:)$(([##16]#MATCH))}}
+}
+
+function chpwd-osc7-pwd() {
+    (( ZSH_SUBSHELL )) || osc7-pwd
+}
+add-zsh-hook -Uz chpwd chpwd-osc7-pwd
+
 mkcd() { mkdir -p "$1" && cd "$1"; }
 # make cd accept files
 cd() {
@@ -657,16 +748,10 @@ ninja(){
   local build_path="$(dirname "$(upfind "build.ninja")")"
   command ninja -C "${build_path:-.}" "$@"
 }
+alias cal="cal -m"
 make(){
   local build_path="$(dirname "$(upfind "Makefile")")"
-  command make -C "${build_path:-.}" "$@"
-}
-cargo(){
-  local build_path="$(dirname "$(upfind "Cargo.toml")")"
-  (
-    builtin cd "${build_path:-.}" >/dev/null || true
-    command cargo "$@"
-  )
+  command make -C "${build_path:-.}" -j$(nproc) "$@" 
 }
 real-which(){
   readlink -f "$(command which "$@")"
@@ -690,30 +775,36 @@ untilport(){
 }
 
 nixify() {
-  if [ ! -e ./.envrc ]; then
-    echo "use nix" > .envrc
-    direnv allow
-  fi
   if [[ ! -e shell.nix ]] && [[ ! -e default.nix ]]; then
-    cat > default.nix <<'EOF'
-with import <nixpkgs> {};
-mkShell {
-  nativeBuildInputs = [
-    bashInteractive
-  ];
+    nix flake new -t github:Mic92/flake-templates#nix-shell .
+  elif [ ! -e ./.envrc ]; then
+    echo "use nix" > .envrc
+  fi
+  direnv allow
+  ${EDITOR:-vim} default.nix
 }
-EOF
-    ${EDITOR:-vim} default.nix
+nix-update() {
+  if [[ -f $HOME/git/nix-update/flake.nix ]]; then
+    nix run $HOME/git/nix-update#nix-update -- "$@"
+  else
+    nix run nixpkgs#nix-update -- "$@"
+  fi
+}
+nix-ci-build() {
+  if [[ -f $HOME/git/nix-ci-build/flake.nix ]]; then
+    nix run $HOME/git/nix-ci-build#nix-ci-build -- "$@"
+  else
+    nix run github:mic92/nix-ci-build -- "$@"
   fi
 }
 
 flakify() {
   if [ ! -e flake.nix ]; then
-    nix flake new -t github:nix-community/nix-direnv .
+    nix flake new -t github:Mic92/flake-templates#nix-develop .
   elif [ ! -e .envrc ]; then
     echo "use flake" > .envrc
-    direnv allow
   fi
+  direnv allow
   ${EDITOR:-vim} flake.nix
 }
 
@@ -737,16 +828,20 @@ fixssh() {
     fi
   done
 }
+function faketty { script -qfc "$(printf "%q " "$@")"; }
+
+tmux-upterm() {
+  if [ -z "$1" ]; then
+    echo "Usage: tmux-upterm <github-username>"
+    return 1
+  fi
+  upterm host --github-user "$1" --server ssh://upterm.thalheim.io:2323 \
+    --force-command 'tmux attach -t pair-programming' \
+    -- tmux new -t pair-programming
+}
 
 ## Autocycle
 setopt autopushd
-# Cycle directory with Ctrl-Right and Ctrl-Left
-eval "insert-cycledleft () { zle push-line; LBUFFER='pushd -q +1'; zle accept-line }"
-zle -N insert-cycledleft
-bindkey "^[[1;5C" insert-cycledleft
-eval "insert-cycledright () { zle push-line; LBUFFER='pushd -q -0'; zle accept-line }"
-zle -N insert-cycledright
-bindkey "^[[1;5D" insert-cycledright
 
 ## Terminal stuff
 ulimit -S -c 0 # disable core dumps
@@ -755,18 +850,7 @@ if [[ $TERM = linux ]]; then
   setterm -regtabs 2 # set tab width of 4 (only works on TTY)
 fi
 
-## Per machine zshrc
-if [[ -f "$HOME/.zshrc.$HOST" ]]; then
-  source "$HOME/.zshrc.$HOST"
-fi
-
-## Plugins
-if [[ -f ~/.zsh-history-substring-search/zsh-history-substring-search.zsh ]]; then
-  source ~/.zsh-history-substring-search/zsh-history-substring-search.zsh
-  # bind P and N for EMACS mode
-  bindkey -M emacs '^P' history-substring-search-up
-  bindkey -M emacs '^N' history-substring-search-down
-fi
+# Plugins
 if [[ -f ~/.zsh-autosuggestions/zsh-autosuggestions.zsh ]]; then
   source ~/.zsh-autosuggestions/zsh-autosuggestions.zsh
   export ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE=fg=60
@@ -777,7 +861,26 @@ fi
 if [[ -f ~/.zsh-autopair/autopair.zsh ]]; then
   source ~/.zsh-autopair/autopair.zsh
 fi
-source ~/.zsh-termsupport
+
+if [[ "$TERM" == "linux" ]]; then # solarized-light
+  echo -en "\e]PB839496" # S_base00
+  echo -en "\e]PA93a1a1" # S_base01
+  echo -en "\e]P0eee8d5" # S_base02
+  echo -en "\e]P62aa198" # S_cyan
+  echo -en "\e]P8fdf6e3" # S_base03
+  echo -en "\e]P2859900" # S_green
+  echo -en "\e]P5d33682" # S_magenta
+  echo -en "\e]P1dc322f" # S_red
+  echo -en "\e]PC657b83" # S_base0
+  echo -en "\e]PE586e75" # S_base1
+  echo -en "\e]P9cb4b16" # S_orange
+  echo -en "\e]P7073642" # S_base2
+  echo -en "\e]P4268bd2" # S_blue
+  echo -en "\e]P3b58900" # S_yellow
+  echo -en "\e]PF002b36" # S_base3
+  echo -en "\e]PD6c71c4" # S_violet
+  clear # against bg artifacts
+fi
 
 if [ -n "${commands[r2]}" ]; then
   r2() {
@@ -788,6 +891,7 @@ if [ -n "${commands[r2]}" ]; then
     fi
   }
 fi
+
 
 if [ -n "$WAYLAND_DISPLAY" ]; then
   alias chromium="chromium --enable-features=UseOzonePlatform --ozone-platform=wayland"
@@ -800,15 +904,29 @@ if [[ $commands[kubectl] ]]; then
    source <(kubectl completion zsh)
 fi
 alias tf=terraform
+alias tg=terragrunt
 
 if [[ -n "${commands[fzf-share]}" ]]; then
   FZF_CTRL_R_OPTS=--reverse
+  if [[ -n "${commands[fd]}" ]]; then
+    export FZF_DEFAULT_COMMAND='fd --type f'
+  fi
   source "$(fzf-share)/key-bindings.zsh"
 fi
 if [[ -f ~/.fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh ]]; then
   source ~/.fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
 fi
 
+if [[ -n "${commands[atuin]}" ]]; then
+  export ATUIN_NOBIND="true"
+  eval "$(atuin init zsh)"
 
-# prevent broken terminals
+  bindkey '^r' _atuin_search_widget
+
+  # depends on terminal mode
+  bindkey '^[[A' _atuin_search_widget
+  bindkey '^[OA' _atuin_search_widget
+fi
+
+# prevent broken terminals by resetting to sane defaults after a command
 ttyctl -f

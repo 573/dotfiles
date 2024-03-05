@@ -1,17 +1,14 @@
-{
-  pkgs,
-  lib,
-  ...
-}: {
+{ pkgs, ... }: {
   imports = [
     ./xserver.nix
-    ./high-dpi.nix
     ./flameshot.nix
   ];
   services.xserver.windowManager.i3.enable = true;
   services.xserver.displayManager.defaultSession = "none+i3";
 
+  services.dbus.packages = [ pkgs.flameshot ];
   environment.systemPackages = with pkgs; [
+    flameshot
     xorg.xmodmap
     firefox
     chromium
@@ -24,7 +21,7 @@
     scrot
     evince
     rofi
-    gnome3.eog
+    gnome.eog
     libnotify
     dunst
     pamixer
@@ -36,11 +33,11 @@
     xorg.xprop
     alacritty
     (i3pystatus.override {
-      extraLibs = with python3.pkgs; [keyrings-alt paho-mqtt];
+      extraLibs = with python3.pkgs; [ keyrings-alt paho-mqtt ];
     })
     networkmanagerapplet
-    gnome3.file-roller
-    gnome3.nautilus
+    gnome.file-roller
+    gnome.nautilus
   ];
 
   services.gvfs.enable = true;

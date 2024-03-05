@@ -23,14 +23,8 @@
 # kexec> mount -t zfs zroot/root/home /mnt/home/
 # kexec> mount -t zfs zroot/root/tmp /mnt/tmp/
 # continue with hetzner-bootstrap.nix
-{
-  lib,
-  pkgs,
-  ...
-}: {
-  imports = [./base.nix];
-
-  nix.package = pkgs.nixFlakes;
+{ lib, ... }: {
+  imports = [ ./base.nix ];
 
   boot.initrd.network.enable = lib.mkForce false;
 }

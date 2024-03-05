@@ -1,109 +1,83 @@
-{
-  config,
-  pkgs,
-  lib,
-  modulesPath,
-  ...
+{ pkgs
+, lib
+, config
+, ...
 }: {
   imports = [
     ./hardware-configuration.nix
 
-    #../modules/libvirt.nix
     ./modules/caddy.nix
-    ./modules/dice.nix
-    ./modules/eve-rdp.nix
-    ./modules/backup.nix
+    ./modules/disko.nix
     ./modules/hass-agent.nix
+    ./modules/networkmanager
     ./modules/nfs.nix
-    ./modules/remote-builder.nix
-    #./modules/minidlna.nix
-    ./modules/networkmanager.nix
     ./modules/packages.nix
-    ./modules/gnome-pim.nix
-    ./modules/sops.nix
-    ./modules/sshd.nix
-    ./modules/cntr.nix
-    #./modules/minidlna.nix
+    ./modules/postgresql.nix
+    ./modules/tum-vpn.nix
+    ./modules/toggle-keyboard
 
-    #../modules/podman.nix
-    ../modules/pipewire.nix
-    ../modules/jarvis-rdp.nix
+    ../modules/borgbackup.nix
+    ../modules/i18n.nix
     ../modules/ip-update.nix
-    #../modules/iwd.nix
-    ../modules/dnsmasq.nix
-    ../modules/promtail.nix
-    ../modules/powertop.nix
-    #../modules/macos-kvm.nix
+    ../modules/kde
+    #../modules/qtile.nix
+    ../modules/keyd.nix
+    ../modules/ksmbd.nix
+    ../modules/lanzaboote.nix
+    ../modules/make-linux-fast.nix
     ../modules/mosh.nix
     ../modules/networkd.nix
-    ../modules/wireguard.nix
+    ../modules/nix-ld.nix
+    ../modules/nncp.nix
+    ../modules/no-hz.nix
+    ../modules/pipewire.nix
+    ../modules/powertop.nix
+    ../modules/promtail.nix
+    ../modules/remote-builder.nix
+    ../modules/sshd/tor.nix
+    ../modules/suspend-on-low-power.nix
+    ../modules/touchpad-hack
     ../modules/tracing.nix
-    ../modules/telegraf.nix
-    #./kde.nix
-    #../modules/samba-dl.nix
-    ../modules/sway.nix
-    #../modules/awesome.nix
-    #../modules/gnome.nix
-    ../modules/pki
-    #../modules/yubikey.nix
-    ../modules/zfs.nix
     ../modules/users.nix
-    #../modules/k3s/server.nix
   ];
+
+  services.udev.packages = with pkgs; [ platformio-core.udev ];
+
+  services.pcscd.enable = true;
+
+  systemd.sysusers.enable = true;
+  users.mutableUsers = false;
+  users.users.joerg.initialHashedPassword = config.clanCore.secrets.root-password.facts.root-password-hash.value;
+
+  # https://community.frame.work/t/guide-linux-battery-life-tuning/6665
+  #services.tlp.enable = true;
+  #services.tlp.settings."PCIE_ASPM_ON_BAT" = "powersupersave";
+
+  hardware.keyboard.qmk.enable = true;
 
   #services.udev.packages = [ pkgs.platformio ];
 
-  hardware.video.hidpi.enable = true;
+  services.gvfs.enable = true;
 
-  boot = {
-    zfs.requestEncryptionCredentials = ["zroot/root"];
-
-    loader.systemd-boot.enable = true;
-    # when installing toggle this
-    loader.efi.canTouchEfiVariables = false;
-
-    # It may leak your data, but look how FAST it is!1!!
-    # https://make-linux-fast-again.com/
-    kernelParams = [
-      "noibrs"
-      "noibpb"
-      "nopti"
-      "nospectre_v2"
-      "nospectre_v1"
-      "l1tf=off"
-      "nospec_store_bypass_disable"
-      "no_stf_barrier"
-      "mds=off"
-      "tsx=on"
-      "tsx_async_abort=off"
-      "mitigations=off"
-    ];
-  };
+  boot.plymouth.enable = true;
 
   networking.hostName = "turingmachine";
 
   console.keyMap = "us";
 
-  i18n.defaultLocale = "en_DK.UTF-8";
-
   # Manual timezones, also see modules/networkmanager.py
   time.timeZone = null;
+
+  programs.wireshark.enable = true;
 
   services = {
     gpm.enable = true;
     upower.enable = true;
-    openssh = {
-      enable = true;
-      forwardX11 = true;
-    };
-
-    avahi.enable = true;
-    avahi.nssmdns = true;
 
     printing = {
       enable = true;
       browsing = true;
-      drivers = [pkgs.gutenprint]; # pkgs.hplip
+      drivers = [ pkgs.gutenprint ]; # pkgs.hplip
     };
 
     logind.extraConfig = ''
@@ -115,7 +89,7 @@
 
   systemd.services.audio-off = {
     description = "Mute audio before suspend";
-    wantedBy = ["sleep.target"];
+    wantedBy = [ "sleep.target" ];
     serviceConfig = {
       Type = "oneshot";
       Environment = "XDG_RUNTIME_DIR=/run/user/1000";
@@ -135,14 +109,6 @@
     docker.enable = true;
     docker.storageDriver = "zfs";
     docker.extraOptions = "--storage-opt=zfs.fsname=zroot/docker";
-  };
-
-  networking.firewall.extraCommands = ''
-    iptables -t nat -A PREROUTING -p tcp -d 88.99.244.96 --dport 53 -j DNAT --to-destination 172.17.0.1
-  '';
-
-  environment.etc."docker/daemon.json".text = builtins.toJSON {
-    dns = ["8.8.8.8" "8.8.4.4"];
   };
 
   fonts.fontDir.enable = true;
@@ -165,10 +131,6 @@
   };
 
   security.audit.enable = false;
-  nixpkgs.config = {
-    allowUnfree = true;
-    android_sdk.accept_license = true;
-  };
 
   services.tor.client.enable = true;
 
@@ -214,19 +176,30 @@
   #    };
   #  };
   #};
-  networking.firewall.interfaces."virbr1".allowedTCPPorts = [
-    445
-    139
-  ];
-  networking.firewall.interfaces."virbr1".allowedUDPPorts = [
-    445
-    139
+
+  networking.firewall.allowedTCPPorts = [ 8081 ];
+
+  boot.binfmt.emulatedSystems = [
+    "armv7l-linux"
+    "aarch64-linux"
+    "riscv32-linux"
+    "riscv64-linux"
+    "powerpc64-linux"
+    "powerpc64le-linux"
   ];
 
-  system.stateVersion = "18.03";
-  networking.extraHosts = ''
-    127.0.0.1 app.stagsecurities.com
-    127.0.0.1 staging.stagsecurities.com
-    2600:1f16:d7a:b302:845b:4213:4451:345b dev01
-  '';
+  system.stateVersion = "23.11";
+  boot.initrd.systemd.enable = true;
+
+  security.sudo.wheelNeedsPassword = lib.mkForce true; # fprint
+
+  services.ksmbd.enable = true;
+  services.ksmbd.openFirewall = true;
+  services.ksmbd.shares.public = {
+    path = "/var/lib/ksmbd";
+    "read only" = true;
+    browseable = "yes";
+    "guest ok" = "yes";
+    comment = "Public samba share.";
+  };
 }

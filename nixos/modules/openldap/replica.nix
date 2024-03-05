@@ -1,15 +1,12 @@
-{
-  config,
-  pkgs,
-  ...
-}: let
+{ config, ... }:
+let
   passwordName =
     {
       eva = "openldap-syncpw-rid1";
       rock = "openldap-syncpw-rid2";
-    }
-    .${config.networking.hostName};
-in {
+    }.${config.networking.hostName};
+in
+{
   imports = [
     ./.
   ];
@@ -27,8 +24,5 @@ in {
     olcSyncRepl.path = config.sops.secrets.${passwordName}.path;
   };
 
-  sops.secrets.${passwordName} = {
-    owner = "openldap";
-    sopsFile = ../../secrets/ldap.yaml;
-  };
+  sops.secrets.${passwordName}.owner = "openldap";
 }

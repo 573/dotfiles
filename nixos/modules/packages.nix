@@ -1,10 +1,7 @@
-{pkgs, ...}: {
+{ pkgs, ... }: {
   environment.systemPackages = with pkgs; [
-    (neovim.override {
-      # no python2
-      withPython = false;
-    })
-    libarchive
+    neovim
+    ouch
     psmisc
     sipcalc
     iperf

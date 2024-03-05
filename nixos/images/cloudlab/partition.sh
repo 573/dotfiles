@@ -1,11 +1,12 @@
 #!/usr/bin/env nix-shell
 #!nix-shell -p e2fsprogs -p bash -p jq -p util-linux -p coreutils -i bash
+# shellcheck shell=bash
 
 set -eux -o pipefail
 
 rootDevice=
 for dev in /dev/sd* /dev/nvme*; do
-  if [[ $(sfdisk --dump --json $dev | jq '.partitiontable.partitions[0].bootable') == true ]]; then
+  if [[ $(sfdisk --dump --json "$dev" | jq '.partitiontable.partitions[0].bootable') == true ]]; then
     rootDevice=$dev
     break
   fi
@@ -23,7 +24,7 @@ if [[ ! -e /dev/disk/by-label/NIXOS_ROOT ]]; then
   1 : start=2048, type=L, bootable
 EOF
 
-  if [[ "$rootDevice" == /dev/nvme* ]]; then
+  if [[ $rootDevice == /dev/nvme* ]]; then
     x=p
   else
     x=

@@ -13,15 +13,28 @@
 (package! languagetool)
 (package! meson-mode)
 (package! jsonnet-mode)
-(package! tree-sitter)
-(package! tree-sitter-langs)
+(package! just-mode)
+
+(package! envrc
+  :pin "3268fb9c3a704676df2700957a6b330f2a0c270b"
+  :recipe (:host github :repo "Mic92/envrc"))
 
 (package! mu4e-alert :disable t)
 
-;(package! bitwarden
-;  :recipe (:host github :repo "seanfarley/emacs-bitwarden"))
-;(package! company-tmux
-;  :recipe (:host github :repo "Mic92/company-tmux"))
+(package! copilot
+  :recipe (:host github :repo "zerolfx/copilot.el" :files ("*.el" "dist")))
+
+(package! blamer)
+
+;; https://emacs.stackexchange.com/questions/75827/doom-emacs-error-running-hook-global-git-commit-mode-because-void-variable
+(package! transient
+      :pin "c2bdf7e12c530eb85476d3aef317eb2941ab9440"
+      :recipe (:host github :repo "magit/transient"))
+
+(package! with-editor
+          :pin "bbc60f68ac190f02da8a100b6fb67cf1c27c53ab"
+          :recipe (:host github :repo "magit/with-editor"))
+
 
 ;; To install SOME-PACKAGE from MELPA, ELPA or emacsmirror:
 ;(package! some-package)

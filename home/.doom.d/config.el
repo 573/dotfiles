@@ -32,6 +32,7 @@
 (setq deft-directory "~/Sync/notes")
 (setq org-directory "~/Sync/notes")
 
+
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type t)
@@ -54,76 +55,17 @@
 ;; they are implemented.
 
 
-(use-package! mu4e
-  :config
-  (setq mu4e-enable-mode-line t
-        mu4e-maildirs-extension-fake-maildir-separator "\\."
-        mu4e-enable-notifications t
-        mu4e-change-filenames-when-moving t
-        mu4e-maildir (expand-file-name "~/mail")
-        mu4e-sent-folder "/thalheim.io/.Sent"
-        mu4e-drafts-folder "/thalheim.io/.Drafts"
-        mu4e-trash-folder "/thalheim.io/.Trash"
-        mu4e-spam-folder "/thalheim.io/.Spam"
-        mu4e-enable-async-operations t
-        mu4e-use-maildirs-extension t
-        mu4e-view-show-addresses t
-        mu4e-maildirs-extension-hide-empty-maildirs t
-        mu4e-update-interval 300
-        mu4e-user-mail-address-list '("joerg@thalheim.io" "joerg@higgsboson.tk" "s1691654@sms.ed.ac.uk")
-        sendmail-program (executable-find "msmtp")
-        send-mail-function #'smtpmail-send-it
-        message-sendmail-f-is-evil t
-        message-sendmail-extra-arguments '("--read-envelope-from")
-        message-send-mail-function #'message-send-mail-with-sendmail
-        mu4e-headers-fields '((:human-date . 12) (:flags . 6) (:folder . 20) (:from . 22) (:subject))
-        mm-sign-option 'guided)
-
-  (setq nsm-settings-file (expand-file-name "~/.emacs.d/network-security.data"))
-
-  (add-to-list 'mu4e-header-info-custom
-               '(:folder . (:name "Folder"  ;; long name, as seen in the message-view
-                            :shortname "Folder"           ;; short name, as seen in the headers view
-                            :help "Mailbox folder of the message" ;; tooltip
-                            :function (lambda (msg) (replace-regexp-in-string "/thalheim.io/?\\(.zlist\\)?" "" (mu4e-message-field msg :maildir))))))
-  (add-to-list 'mu4e-headers-actions
-               '("Apply patch" . mu4e-action-git-apply-mbox) t)
-
-  ;; Mark as read and move to spam
-  (add-to-list 'mu4e-marks
-               '(spam
-                 :char       "S"
-                 :prompt     "Spam"
-                 :show-target (lambda (target) mu4e-spam-folder)
-                 :action      (lambda (docid msg target)
-                                (mu4e~proc-move docid mu4e-spam-folder "+S-u-N"))))
-
-  (mu4e~headers-defun-mark-for spam)
-  (map! :localleader
-        :map mu4e-headers-mode-map
-        :desc "Move to spam" "s" #'mu4e-headers-mark-for-spam)
-
-  (add-to-list 'mu4e-bookmarks
-               (make-mu4e-bookmark
-                :name  "Big messages"
-                :query "size:2M..500M"
-                :key ?b))
-  (add-to-list 'mu4e-bookmarks
-               (make-mu4e-bookmark
-                :name "Unread messages without spam"
-                :query "flag:unread AND NOT flag:trashed AND NOT maildir:/thalheim.io/.Spam"
-                :key ?u)))
-
 (after! 'sh-script
   (lambda ()
     (setq sh-basic-offset 2 sh-indentation 2)))
 
 (use-package! lsp
-  :config
-  (setq lsp-clients-clangd-args '("-background-index")))
+  :custom
+  (lsp-clients-clangd-args '("-background-index"))
+  (lsp-enable-suggest-server-download nil))
 
 (setq projectile-project-search-path '("~/git"))
-(yas/load-directory "~/.homesick/repos/dotfiles/home/.emacs.d/snippets")
+
 
 (add-to-list '+format-on-save-enabled-modes 'go-mode t)
 
@@ -179,11 +121,37 @@
 
 (setq sentence-end-double-space nil) ;period single space ends sentence
 
-(after! rustic
-  (setq rustic-lsp-server 'rust-analyzer))
-
 (use-package envrc
     :config
     (envrc-global-mode))
 
-(set-formatter! 'alejandra  "alejandra --quiet" :modes '(nix-mode))
+(use-package! lsp-mode
+  :config
+  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.terragrunt-cache\\'")
+  (add-to-list 'lsp-language-id-configuration '(nix-mode . "nix"))
+  (lsp-register-client
+   (make-lsp-client :new-connection (lsp-stdio-connection '("nil"))
+                    :major-modes '(nix-mode)
+                    :server-id 'nix)))
+
+(use-package blamer
+  :bind (("s-i" . blamer-show-commit-info))
+  :defer 20
+  :custom
+  (blamer-idle-time 2)
+  (blamer-min-offset 70)
+  :custom-face
+  (blamer-face ((t :foreground "#7a88cf"
+                    :background nil
+                    :height 140
+                    :italic t)))
+  :config
+  (global-blamer-mode 1))
+
+(use-package! copilot
+  :hook (prog-mode . copilot-mode)
+  :bind (:map copilot-completion-map
+              ("<tab>" . 'copilot-accept-completion)
+              ("TAB" . 'copilot-accept-completion)
+              ("C-TAB" . 'copilot-accept-completion-by-word)
+              ("C-<tab>" . 'copilot-accept-completion-by-word)))

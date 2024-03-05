@@ -1,14 +1,9 @@
 {
-  config,
-  pkgs,
-  ...
-}: {
-  imports = [../../modules/sshd.nix];
+  imports = [
+    ../../modules/sshd/tor.nix
+  ];
 
   services.openssh = {
-    extraConfig = ''
-      HostCertificate ${./eve-cert.pub}
-    '';
     listenAddresses = [
       {
         addr = "0.0.0.0";
@@ -25,5 +20,5 @@
     ];
   };
 
-  networking.firewall.allowedTCPPorts = [22 443];
+  networking.firewall.allowedTCPPorts = [ 22 443 ];
 }

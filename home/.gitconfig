@@ -1,14 +1,23 @@
 [core]
   excludesfile = ~/.gitignore
   attributesfile = ~/.gitattributes
+  pager = delta --color-only
+  editor = nvim-open
 [include]
   path = ~/.gitconfig.local
+[interactive]
+  singlekey = true
 [format]
   signoff = true
 [color]
   branch = true
   diff = true
   status = true
+[push]
+  recurseSubmodules = on-demand
+[delta]
+  navigate = true    # use n and N to move between diff sections
+  light = false      # set to true if you're in a terminal w/ a light background color (e.g. the defau
 [am]
   threeWay = true
 [user]
@@ -18,46 +27,53 @@
 [gpg]
   format = ssh
 [diff]
-  tool = vim -d
   compactionHeuristic = true
   renames = true
   colorMoved = default
 [merge]
-  tool = vim -d
+	tool = vimdiff
+  keepBackup = false
   conflictstyle = zdiff3
+[mergetool "vimdiff"]
+  cmd = nvim -d $LOCAL $REMOTE $MERGED -c '$wincmd w' -c 'wincmd J'
 [alias]
   rb = "rebase origin/HEAD"
-  get = clone --recursive
+  clone = clone --recursive
   blame = -w -M
   update = !git pull && git submodule update --init --recursive
   comma = commit --amend
   uncommit = reset --soft HEAD^
-  pr = !"pr() { git fetch origin pull/$1/head:pr-$1; git checkout pr-$1; }; pr"
   backport = cherry-pick -x
-  cp = cherry-pick
+  checkout-pr = !"pr() { git fetch origin pull/$1/head:pr-$1; git checkout pr-$1; }; pr"
   reset-pr = reset --hard FETCH_HEAD
+  force-push = push --force-with-lease
   publish = !git pull && git push
   # recover failed commit messages: https://stackoverflow.com/questions/9133526/git-recover-failed-commits-message
   recommit = !git commit -eF $(git rev-parse --git-dir)/COMMIT_EDITMSG
 [push]
   default = simple
+  autoSetupRemote = true
 [rerere]
+  autoUpdate = true
   enabled = true
 [branch]
   autosetuprebase = always
+  autoSetupMerge = true
 [pull]
   rebase = true
   autostash = true
   twohead = ort
 [rebase]
+  stat = true
   autoStash = true
   autoSquash = true
+  updateRefs = true
 
 [help]
   autocorrect = 1
 [mergetool]
   prompt = false
-  path = nvim
+  path = nvim-open
 [imap]
   folder = "Drafts"
   host = imap://imap.thalheim.io
@@ -91,5 +107,14 @@
   defaultBranch = main
 [credential]
   helper = store
+# sucks with lazygit
+#[commit]
+#  gpgsign = true
 [commit]
-  gpgsign = true
+	verbose = true
+[credential "https://github.com"]
+	helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = !gh auth git-credential
+[http]
+  cookiefile = ~/.gitcookies

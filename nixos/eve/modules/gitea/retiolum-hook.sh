@@ -2,11 +2,17 @@
 
 set -eux -o pipefail
 
-export GIT_DIR=$(pwd)
+GIT_DIR=$(pwd)
+export GIT_DIR
 export GIT_WORK_TREE=/var/lib/gitea/builds/stockholm
 export RETIOLUM_PATH=/var/lib/gitea/builds/retiolum
 export RETIOLUM_URL=gitea@git.thalheim.io:Mic92/retiolum
 export WEBROOT=/var/www/retiolum.thalheim.io
+
+export GIT_AUTHOR_NAME="gitea"
+export GIT_AUTHOR_EMAIL="gitea@thalheim.io"
+export GIT_COMMITTER_NAME="gitea"
+export GIT_COMMITTER_EMAIL="gitea@thalheim.io"
 
 mkdir -p $GIT_WORK_TREE
 cd $GIT_WORK_TREE
@@ -15,7 +21,7 @@ git checkout -f
 git submodule update --init --recursive
 
 # Enter Directory
-cat > dummy.nix << 'EOF'
+cat >dummy.nix <<'EOF'
 { config, lib, pkgs, ... }: {
   imports = [ ./krebs ];
   krebs = {
@@ -27,7 +33,7 @@ cat > dummy.nix << 'EOF'
 }
 EOF
 
-cat > wiregrill.nix << 'EOF'
+cat >wiregrill.nix <<'EOF'
 with import <nixpkgs/nixos> {};
 with import <stockholm/lib>;
 let
@@ -56,6 +62,7 @@ nix build \
   -I nixos-config=./dummy.nix \
   -I stockholm=./. \
   -f '<nixpkgs/nixos>' \
+  --builders '' \
   config.krebs.tinc.retiolum.hostsArchive
 install -D -m644 result $WEBROOT/tinc-hosts.tar.bz2
 nix build \
@@ -63,16 +70,18 @@ nix build \
   -I nixos-config=./dummy.nix \
   -I stockholm=./. \
   -f '<nixpkgs/nixos>' \
+  --builders '' \
   pkgs.krebs-hosts
 install -D -m644 result $WEBROOT/etc.hosts
-grep -E '^42:|.i |.i$' result > $WEBROOT/etc.hosts-v6only
+grep -E '^42:|.i |.i$' result >$WEBROOT/etc.hosts-v6only
 
 nix-build ./wiregrill.nix \
   -I secrets=./krebs/0tests/data/secrets \
   -I nixos-config=./dummy.nix \
-  -I stockholm=./.
+  -I stockholm=./. \
+  --option builders ''
 
-jq < result > $WEBROOT/wiregrill.json
+jq <result >$WEBROOT/wiregrill.json
 
 unset GIT_WORK_TREE GIT_DIR
 

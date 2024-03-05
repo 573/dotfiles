@@ -1,14 +1,17 @@
-{
-  pkgs,
-  lib,
-  config,
-  ...
-}: let
+{ pkgs
+, lib
+, config
+, ...
+}:
+let
   virtualRegex = pkgs.writeText "virtual-regex" ''
-    /^joerg\.[^@.]+@thalheim\.io$/ joerg@thalheim.io
-    /^shannan.[^@.]+@lekwati\.com/ shannan@lekwati.com
+    /^joerg(\.|\+)[^@.]+@thalheim\.io$/ joerg@thalheim.io
+    /^shannan(\.|\+)[^@.]+@lekwati\.com/ shannan@lekwati.com
     /^albert-[^@.]+@halfco\.de$/ albert@halfco.de
     /^devkid-[^@.]+@devkid\.net$/ devkid@devkid.net
+    /^ls1-logins-[^@.]+@thalheim.io$/ ls1-logins@lists.lrz.de
+    /^info\.[^@.]+@davhau\.com$/ info@davhau.com
+    /^dave\.[^@.]+@davhau\.com$/ info@davhau.com
   '';
 
   domains = pkgs.writeText "domains.cf" ''
@@ -38,13 +41,7 @@
 
   helo_access = pkgs.writeText "helo_access" ''
     ${config.networking.eve.ipv4.address}   REJECT Get lost - you're lying about who you are
-    ${
-      lib.concatMapStringsSep "\n"
-      (address: ''
-        ${address}   REJECT Get lost - you're lying about who you are
-      '')
-      config.networking.eve.ipv6.addresses
-    }
+    ${config.networking.eve.ipv6.address}   REJECT Get lost - you're lying about who you are
     thalheim.io   REJECT Get lost - you're lying about who you are
     lekwati.com   REJECT Get lost - you're lying about who you are
   '';
@@ -53,7 +50,8 @@
     # pfpleisure.org
     95.141.161.114 OK
   '';
-in {
+in
+{
   services.postfix = {
     enable = true;
     enableSubmission = true;
@@ -106,6 +104,9 @@ in {
       smtp_tls_note_starttls_offer = "yes";
       smtpd_tls_security_level = "may";
       smtpd_tls_auth_only = "yes";
+
+      smtp_dns_support_level = "dnssec";
+      smtp_tls_security_level = "dane";
 
       smtpd_tls_cert_file = "/var/lib/acme/mail.thalheim.io/full.pem";
       smtpd_tls_key_file = "/var/lib/acme/mail.thalheim.io/key.pem";

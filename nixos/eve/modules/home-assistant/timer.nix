@@ -1,8 +1,8 @@
-{
-  config,
-  pkgs,
-  ...
-}: let
+{ config
+, pkgs
+, ...
+}:
+let
   convertDuration = ''
     {% if unit == "seconds" %}
       {{ duration }}
@@ -12,13 +12,41 @@
       {{ duration * 60 * 60 }}
     {% endif %}
   '';
-in {
+in
+{
   services.home-assistant.config = {
     timer = {
-      rhasspy = {};
-      pause_rhasspy = {};
+      rhasspy = { };
+      pause_rhasspy = { };
     };
-    intent = {};
+
+    conversation.intents = {
+      Nap = [
+        "(Did|Have) you (had|have) a (nap|sleep|rest|break|pause|siesta) [today]"
+      ];
+      Pause = [
+        "(Pause|Suspend) for {{ duration }} {{ unit }}"
+      ];
+      GetTime = [
+        "What (day|date|time) is it"
+        "What is the (day|date|time)"
+        "What is today's (day|date|time)"
+        "What is the (day|date|time) today"
+        "What is today?"
+      ];
+      GetTimer = [
+        "How much time is left [on the (timer|alarm|clock)]"
+      ];
+      CancelTimer = [
+        "Cancel the (timer|alarm|clock)"
+        "Stop the (timer|alarm|clock)"
+      ];
+      SetTimer = [
+        "Set a (timer|alarm|clock) for {{ duration }} {{ unit }}"
+      ];
+    };
+
+    intent = { };
     intent_script = {
       Pause = {
         speech.text = "Suspend Jarvis for {{ duration }} {{ unit }}.";
@@ -85,9 +113,11 @@ in {
       };
     };
 
-    shell_command.ssh_rhasspy_mqtt = let
-      cmd = ''mosquitto_pub -L mqtt://localhost:12183/hermes/hotword/toggle{{ state }} -m '{\"siteId\": \"default\", \"reason\": \"\"}' '';
-    in ''${pkgs.openssh}/bin/ssh -i ${config.sops.secrets.ssh-homeassistant.path} hass-agent@{{ host }} "${cmd}"'';
+    shell_command.ssh_rhasspy_mqtt =
+      let
+        cmd = ''mosquitto_pub -L mqtt://localhost:12183/hermes/hotword/toggle{{ state }} -m '{\"siteId\": \"default\", \"reason\": \"\"}' '';
+      in
+      ''${pkgs.openssh}/bin/ssh -i ${config.sops.secrets.ssh-homeassistant.path} hass-agent@{{ host }} "${cmd}"'';
 
     automation = [
       {

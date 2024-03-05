@@ -1,9 +1,5 @@
-{
-  pkgs,
-  config,
-  ...
-}: {
-  imports = [../../modules/packages.nix];
+{ pkgs, ... }: {
+  imports = [ ../../modules/packages.nix ];
 
-  environment.systemPackages = with pkgs; [cntr ntfs3g];
+  environment.systemPackages = with pkgs; [ cntr ntfs3g ];
 }

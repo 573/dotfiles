@@ -1,20 +1,15 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}: {
+{ config, ... }: {
   imports = [
-    ../../../modules/telegraf.nix
     ./private.nix
     ./uni.nix
     ./krebs.nix
-    ./it4r.nix
     ./nix-community.nix
+    ./nixos-wiki-infra.nix
+    ./numtide.nix
   ];
 
-  sops.secrets.telegraf.owner = config.systemd.services.telegraf.serviceConfig.User;
+  sops.secrets.eva-telegraf.owner = config.systemd.services.telegraf.serviceConfig.User;
   services.telegraf.environmentFiles = [
-    config.sops.secrets.telegraf.path
+    config.sops.secrets.eva-telegraf.path
   ];
 }

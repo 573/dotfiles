@@ -1,8 +1,8 @@
-@ 3600 IN SOA lekwati.com. root.lekwati.com. 2021122300 7200 3600 86400 3600
+@ 3600 IN SOA lekwati.com. ns1.thalheim.io. 2023101501 7200 3600 86400 3600
 
 $TTL 600
 
-@ 3600 IN NS ns2.thalheim.io.
+@ 3600 IN NS ns1.thalheim.io.
 @ 3600 IN NS ns2.he.net.
 @ 3600 IN NS ns3.he.net.
 @ 3600 IN NS ns4.he.net.
@@ -20,9 +20,11 @@ blog IN CNAME slekwati.github.io.
 writey-things IN CNAME slekwati.github.io.
 desperate-chef IN CNAME slekwati.github.io.
 for-marks IN CNAME slekwati.github.io.
-_acme-challenge IN NS ns2.thalheim.io.
+_acme-challenge IN NS ns1.thalheim.io.
 
 ;; TXT Records
+_mta-sts IN TXT "v=STSv1; id=20181027085700Z;"
+smtp._tls IN TXT "v=TLSRPTv1;rua=mailto:joerg.tls-report@thalheim.io"
 _adsp._domainkey 1 IN TXT "dkim=all;"
 default._domainkey 1 IN TXT "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDF+v8DL7amTnEsriUt3c1f7C6n99FPTxsnAnUr0HoiMxGdkcy7sIofxtPSxhQE4+jqFFPptxJ9gCQlkmh2w0vw+B9aulVpC8bltjt0Jn/o+AYy6Z/R12C3EaYGWyJbKTu1qTl3DwHKZS8ehJ2Jqkr2Ri+nWM0TQm7PjAHjboi8ywIDAQAB"
 _dmarc 1 IN TXT "\"v=DMARC1; p=none; adkim=r; aspf=r; rua=mailto:joerg.dmarc@thalheim.io; ruf=mailto:joerg.dmarc@thalheim.io; pct=100\""
@@ -30,3 +32,5 @@ _smtp._tls IN TXT "v=TLSRPTv1;rua=mailto:joerg.smtp-tls@thalheim.io"
 @ IN TXT "v=spf1 mx -all"
 _token._dnswl IN TXT "1vf4k8p0xvetb1y37xjrir5x7vtt1k11"
 @ IN TXT "google-site-verification=xxY6u05ueB-UbRdaGKjd1MpqbqhWLrUaQHNEjQ8Joq8"
+
+bbc IN NS ns1.thalheim.io.

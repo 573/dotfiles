@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+set -eux -o pipefail
+
+RELEASE_BRANCH=nixos-23.11
+
+cd "$HOME/git/nixpkgs"
+git fetch upstream
+git checkout "${RELEASE_BRANCH}-backports"
+git rebase "upstream/$RELEASE_BRANCH"
+git push tum +HEAD:"${RELEASE_BRANCH}-backports"
+git checkout main
+git rebase upstream/nixpkgs-unstable
+git push origin +HEAD:main

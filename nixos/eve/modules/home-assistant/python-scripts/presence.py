@@ -12,7 +12,7 @@ university = "University"
 grunecker = "grunecker"
 
 
-def get_message():
+def get_message() -> str | None:
     logger.info(f"not_together: {not_together.state}")
     logger.info(f"to_state: {to_state}")
     logger.info(f"from_state: {from_state}")
@@ -28,16 +28,19 @@ def get_message():
 
     if to_state == home:
         return f"{name} is home"
-    elif from_state == grunecker or from_state == "Grunecker":
+
+    if from_state in (grunecker, "Grunecker"):
         return f"{name} left Grunecker"
-    elif to_state == grunecker or to_state == "Grunecker":
+
+    if to_state in (grunecker, "Grunecker"):
         return f"{name} is in Grunecker"
-    elif from_state == university:
+
+    if from_state == university:
         return f"{name} left uni"
     return None
 
 
-def main():
+def main() -> None:
     message = get_message()
     logger.info(f"message {message}")
     if message is None:
@@ -54,7 +57,7 @@ def main():
     hass.services.call("notify", notify_service, {"message": message}, blocking=False)
 
     if joerg.state == shannan.state:
-        logger.info(f"shannan and joerg are together now")
+        logger.info("shannan and joerg are together now")
         hass.services.call(
             "input_boolean",
             "turn_off",

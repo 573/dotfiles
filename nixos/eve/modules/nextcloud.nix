@@ -1,7 +1,6 @@
-{
-  config,
-  pkgs,
-  ...
+{ config
+, pkgs
+, ...
 }: {
   services.nextcloud = {
     enable = true;
@@ -10,7 +9,7 @@
 
     caching.apcu = true;
 
-    package = pkgs.nextcloud23;
+    package = pkgs.nextcloud28;
 
     config = {
       dbtype = "pgsql";
@@ -20,10 +19,8 @@
       dbhost = "/run/postgresql";
       adminuser = "nextcloudadmin";
       adminpassFile = config.sops.secrets.nextcloud-admin-password.path;
-      extraTrustedDomains = [
-        "pim.devkid.net"
-      ];
     };
+    settings.trusted_domains = [ "pim.devkid.net" ];
 
     poolSettings = {
       "pm" = "ondemand";
@@ -38,6 +35,6 @@
   services.nginx.virtualHosts."cloud.thalheim.io" = {
     useACMEHost = "thalheim.io";
     forceSSL = true;
-    serverAliases = ["pim.devkid.net"];
+    serverAliases = [ "pim.devkid.net" ];
   };
 }

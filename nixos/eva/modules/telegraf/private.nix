@@ -1,55 +1,52 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}: let
+let
   urls = [
     "eve"
     #"rock"
+    "rauter"
     "matchbox"
   ];
-in {
+in
+{
   services.telegraf.extraConfig.inputs = {
     ping =
       (map
-      (url: {
-        method = "native";
-        urls = [url];
-        tags.type = "mobile";
-        tags.host = url;
-        tags.org = "private";
-        count = 5;
-      })
-      ["turingmachine.r" "herbert.r"])
+        (url: {
+          method = "native";
+          urls = [ url ];
+          tags.type = "mobile";
+          tags.host = url;
+          tags.org = "private";
+          count = 5;
+        })
+        [ "turingmachine.r" "bernie.r" ])
       ++ (map
-      (url: {
-        method = "native";
-        urls = ["6.${url}.r"];
-        ipv6 = true;
-        tags.host = url;
-        tags.org = "private";
-      })
-      urls);
+        (url: {
+          method = "native";
+          urls = [ "6.${url}.r" ];
+          ipv6 = true;
+          tags.host = url;
+          tags.org = "private";
+        })
+        urls);
     net_response =
       (map
-      (host: {
-        protocol = "tcp";
-        address = "${host}.r:22";
-        tags.host = host;
-        tags.org = "private";
-        send = "SSH-2.0-Telegraf";
-        expect = "SSH-2.0";
-        timeout = "10s";
-      })
-      urls)
+        (host: {
+          protocol = "tcp";
+          address = "${host}.r:22";
+          tags.host = host;
+          tags.org = "private";
+          send = "SSH-2.0-Telegraf";
+          expect = "SSH-2.0";
+          timeout = "10s";
+        })
+        urls)
       ++ (map
-      (port: {
-        protocol = "tcp";
-        tags.host = "eve";
-        tags.org = "private";
-        address = "devkid.net:${toString port}";
-      }) [
+        (port: {
+          protocol = "tcp";
+          tags.host = "eve";
+          tags.org = "private";
+          address = "devkid.net:${toString port}";
+        }) [
         30033 # ts3_ft
         10011 # ts3_sq
       ])
@@ -150,49 +147,36 @@ in {
 
     http_response = [
       {
-        urls = ["https://www.wikipedia.org/"];
-        http_proxy = ''https://telegraf%40thalheim.io:''${LDAP_PASSWORD}@devkid.net:8889'';
-        tags.host = "eve";
-        tags.org = "private";
-        response_string_match = "wikipedia.org";
-      }
-      {
-        urls = ["https://adminer.thalheim.io/"];
+        urls = [ "https://adminer.thalheim.io/" ];
         tags.host = "eve";
         tags.org = "private";
         response_string_match = "Login";
       }
       {
-        urls = ["https://mail.thalheim.io"];
+        urls = [ "https://mail.thalheim.io" ];
         tags.host = "eve";
         tags.org = "private";
         response_string_match = "javascript";
       }
       {
-        urls = ["https://ist.devkid.net/wiki/Hauptseite"];
-        tags.host = "eve";
-        tags.org = "private";
-        response_string_match = "Informationssystemtechnik";
-      }
-      {
-        urls = ["https://rss.devkid.net"];
+        urls = [ "https://rss.devkid.net" ];
         tags.org = "private";
         tags.host = "eve";
       }
       {
-        urls = ["https://rspamd.thalheim.io"];
+        urls = [ "https://rspamd.thalheim.io" ];
         tags.host = "eve";
         tags.org = "private";
         response_string_match = "Rspamd";
       }
       {
-        urls = ["https://glowing-bear.thalheim.io"];
+        urls = [ "https://glowing-bear.thalheim.io" ];
         tags.host = "eve";
         tags.org = "private";
         response_string_match = "Glowing";
       }
       {
-        urls = ["https://grafana.thalheim.io/login"];
+        urls = [ "https://grafana.thalheim.io/login" ];
         tags.host = "eve";
         tags.org = "private";
         response_string_match = "Grafana";
@@ -200,10 +184,10 @@ in {
       {
         tags.host = "eve";
         tags.org = "private";
-        urls = ["https://dl.thalheim.io/OtNjoZOUnEn3H6LJZ1qcIw/test"];
+        urls = [ "https://dl.thalheim.io/OtNjoZOUnEn3H6LJZ1qcIw/test" ];
       }
       {
-        urls = ["https://syncthing.thalheim.io"];
+        urls = [ "https://syncthing.thalheim.io" ];
         username = "syncthing";
         password = "$SYNCTHING_PASSWORD";
         tags.host = "eve";
@@ -220,26 +204,33 @@ in {
         response_string_match = "Gitea";
       }
       {
-        urls = ["https://bitwarden.thalheim.io/alive"];
+        urls = [ "https://bitwarden.thalheim.io/alive" ];
         tags.host = "eve";
         tags.org = "private";
         response_string_match = ''"20'';
       }
       {
-        urls = ["https://thalheim.io"];
+        urls = [ "https://buildbot.thalheim.io" ];
+        tags.host = "eve";
+        tags.org = "private";
+        response_string_match = "Buildbot";
+        response_status_code = 200;
+      }
+      {
+        urls = [ "https://thalheim.io" ];
         tags.host = "eve";
         tags.org = "private";
         response_string_match = "Jörg Thalheim";
       }
+      #{
+      #  urls = [ "http://tts.r" ];
+      #  tags.host = "eve";
+      #  tags.org = "private";
+      #  response_string_match = "TTS";
+      #}
       {
-        urls = ["http://tts.r"];
-        tags.host = "eve";
-        tags.org = "private";
-        response_string_match = "TTS";
-      }
-      {
-        urls = ["http://loki.r/ready"];
-        tags.host = "rock";
+        urls = [ "http://loki.r/ready" ];
+        tags.host = "eva";
         tags.org = "private";
         response_string_match = "ready";
       }
@@ -252,16 +243,11 @@ in {
         tags.org = "private";
         response_string_match = "Nextcloud";
       }
-      {
-        urls = ["https://influxdb.thalheim.io:8086/ping"];
-        tags.org = "private";
-        tags.host = "eve";
-      }
     ];
 
     dns_query = {
       servers = [
-        "ns2.thalheim.io"
+        "ns1.thalheim.io"
         "ns2.he.net"
         "ns3.he.net"
         "ns4.he.net"
@@ -277,44 +263,21 @@ in {
       record_type = "A";
     };
 
-    exec = [
-      {
-        ## Commands array
-        commands = let
-          kdigHealth = pkgs.writeScript "kdig-health" ''
-            #!${pkgs.runtimeShell}
-            proto=$1
-            if ${pkgs.knot-dns}/bin/kdig +short "+$proto" example.com A @dns.thalheim.io >/dev/null; then
-              result=0
-            else
-              result=1
-            fi
-            echo secure_dns,protocol=$proto state=$result
-          '';
-        in [
-          "${kdigHealth} https"
-          "${kdigHealth} tls"
-        ];
-        data_format = "influx";
-        tags.host = "eve";
-        tags.org = "private";
-      }
-    ];
-
     x509_cert = [
       {
         sources = [
+          # garnix.io
+          "https://garnix.io:443"
+
           # nginx
           "https://devkid.net:443"
           "https://thalheim.io:443"
-          "https://tts.r:443"
+          #"https://tts.r:443"
           "https://navidrome.r:443"
           "https://flood.r:443"
           "https://loki.r:443"
           "https://prometheus.r:443"
           "https://alertmanager.r:443"
-          # squid
-          "https://devkid.net:8889"
           # dovecot
           "tcp://imap.thalheim.io:993"
           "tcp://imap.devkid.net:993"
@@ -337,5 +300,19 @@ in {
         tags.org = "private";
       }
     ];
+
+    #http = [
+    #  {
+    #    urls = [
+    #      ''http://navidrome.r/rest/getAlbumList2?u=''${NAVIDROME_USER}&v=1.13.0&c=curl&p=''${NAVIDROME_PASSWORD}&type=alphabeticalByName&size=1&offset=5000''
+    #    ];
+    #    data_format = "xml";
+    #    xml = [
+    #      {
+    #        fields_int.navidrome_album_count = "count(/subsonic-response/albumList2/album)";
+    #      }
+    #    ];
+    #  }
+    #];
   };
 }

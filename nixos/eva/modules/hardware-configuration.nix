@@ -1,22 +1,19 @@
-{
-  config,
-  lib,
-  pkgs,
-  modulesPath,
-  ...
-}: {
-  #imports = [
-  #  (modulesPath + "/profiles/qemu-guest.nix")
-  #];
-
-  #boot.loader.grub.devices = [ "/dev/sda" ];
-  #boot.initrd.availableKernelModules = [ "ata_piix" "virtio_pci" "xhci_pci" "sd_mod" "sr_mod" ];
-
-  #fileSystems."/" = {
-  #  device = "/dev/disk/by-uuid/84053adc-49bc-4e02-8a19-3838bf3a43fd";
-  #  fsType = "ext4";
-  #};
+{ lib, modulesPath, ... }: {
   imports = [
-    (modulesPath + "/virtualisation/lxc-container.nix")
+    (modulesPath + "/profiles/qemu-guest.nix")
   ];
+
+  # based on nixos-generate-config --dir /tmp/config
+  boot.initrd.availableKernelModules = [
+    "ata_piix"
+    "uhci_hcd"
+    "virtio_pci"
+    "virtio_scsi"
+    "sd_mod"
+    "sr_mod"
+  ];
+
+  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+  # it's a vm, so we can just update efivars on every switch
+  boot.loader.efi.canTouchEfiVariables = true;
 }

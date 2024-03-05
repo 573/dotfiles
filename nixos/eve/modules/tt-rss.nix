@@ -1,7 +1,6 @@
-{
-  config,
-  pkgs,
-  ...
+{ config
+, pkgs
+, ...
 }: {
   services.phpfpm.pools.tt-rss.settings = {
     "pm" = "ondemand";
@@ -53,14 +52,15 @@
     '';
   };
 
+  # NOTE: No configuration is done if not using virtual host
   services.nginx = {
     virtualHosts."rss.thalheim.io" = {
       useACMEHost = "thalheim.io";
       forceSSL = true;
-      globalRedirect = "rss.devkid.net";
+      globalRedirect = config.services.tt-rss.virtualHost;
     };
 
-    virtualHosts."rss.devkid.net" = {
+    virtualHosts.${config.services.tt-rss.virtualHost} = {
       useACMEHost = "thalheim.io";
       forceSSL = true;
     };

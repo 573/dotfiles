@@ -1,43 +1,38 @@
-{
-  pkgs,
-  lib,
-  ...
+{ pkgs
+, lib
+, ...
 }: {
   programs.sway = {
     enable = true;
     wrapperFeatures.gtk = true; # so that gtk works properly
     extraPackages = with pkgs; [
-      dex
       swaylock-effects # lockscreen
       pavucontrol
       swayidle
       xwayland
-      waybar # status bar
       (i3pystatus.override {
-        extraLibs = [python3.pkgs.keyrings-alt python3.pkgs.paho-mqtt];
+        extraLibs = [ python3.pkgs.keyrings-alt python3.pkgs.paho-mqtt ];
       })
-      wofi
-      gnome3.eog
+      rofi-wayland
+      rofi-rbw
+      gnome.eog
       libnotify
-      autotiling # https://github.com/nwg-piotr/autotiling
       dunst # notification daemon
-      kanshi # autorandr
-      swappy
+      kanshi # auto-configure display outputs
       wdisplays
       wl-clipboard
-      flameshot
       blueberry
+      sway-contrib.grimshot # screenshots
+      wtype
 
       pavucontrol
-      lightlocker
       evince
       libnotify
       pamixer
-      mpc_cli
       networkmanagerapplet
-      gnome3.file-roller
-      gnome3.nautilus
-      firefox-wayland
+      gnome.file-roller
+      gnome.nautilus
+      firefox
       chromium
 
       # Somehow xdg.portal services do not really work for me.
@@ -49,6 +44,7 @@
 
   xdg.portal.enable = true;
   xdg.portal.wlr.enable = true;
+  fonts.enableDefaultPackages = true;
 
   environment.sessionVariables = {
     MOZ_ENABLE_WAYLAND = "1";
@@ -61,7 +57,7 @@
   };
 
   environment.systemPackages = with pkgs; [
-    xdg_utils
+    xdg-utils
     # polkit agent
     polkit_gnome
 
@@ -79,53 +75,54 @@
       name = "startsway";
       destination = "/bin/startsway";
       executable = true;
-      text = let
-        schema = pkgs.gsettings-desktop-schemas;
-        datadir = "${schema}/share/gsettings-schemas/${schema.name}";
-      in ''
-        #! ${pkgs.bash}/bin/bash
+      text =
+        let
+          schema = pkgs.gsettings-desktop-schemas;
+          datadir = "${schema}/share/gsettings-schemas/${schema.name}";
+        in
+        ''
+          #! ${pkgs.bash}/bin/bash
 
-        ${pkgs.rbw}/bin/rbw unlock
-        ${pkgs.openssh}/bin/ssh-add
-        export XDG_DATA_DIRS=${datadir}:$XDG_DATA_DIRS
-        # first import environment variables from the login manager
-        systemctl --user import-environment
-        # then start the service
-        exec systemctl --user start sway.service
-      '';
+          ${pkgs.rbw}/bin/rbw unlock
+          ${pkgs.openssh}/bin/ssh-add
+          export XDG_DATA_DIRS=${datadir}:$XDG_DATA_DIRS
+          # first import environment variables from the login manager
+          systemctl --user unset-environment DISPLAY WAYLAND_DISPLAY
+          systemctl --user import-environment
+          # then start the service
+          exec systemctl --user start sway.service
+        '';
     })
   ];
 
   # for polkit
-  environment.pathsToLink = ["/libexec"];
+  environment.pathsToLink = [ "/libexec" ];
 
-  programs.qt5ct.enable = true;
+  qt.platformTheme = "qt5ct";
 
   # brightnessctl
-  users.users.joerg.extraGroups = ["video"];
+  users.users.joerg.extraGroups = [ "video" ];
 
   systemd.user.targets.sway-session = {
     description = "Sway compositor session";
-    documentation = ["man:systemd.special(7)"];
-    bindsTo = ["graphical-session.target"];
-    wants = ["graphical-session-pre.target"];
-    after = ["graphical-session-pre.target"];
+    documentation = [ "man:systemd.special(7)" ];
+    bindsTo = [ "graphical-session.target" ];
+    wants = [ "graphical-session-pre.target" ];
+    after = [ "graphical-session-pre.target" ];
   };
 
   systemd.user.services.sway = {
     description = "Sway - Wayland window manager";
-    documentation = ["man:sway(5)"];
-    bindsTo = ["graphical-session.target"];
-    wants = ["graphical-session-pre.target"];
-    after = ["graphical-session-pre.target"];
+    documentation = [ "man:sway(5)" ];
+    bindsTo = [ "graphical-session.target" ];
+    wants = [ "graphical-session-pre.target" ];
+    after = [ "graphical-session-pre.target" ];
     # We explicitly unset PATH here, as we want it to be set by
     # systemctl --user import-environment in startsway
     environment.PATH = lib.mkForce null;
     serviceConfig = {
       Type = "simple";
-      ExecStart = ''
-        ${pkgs.dbus}/bin/dbus-run-session ${pkgs.sway}/bin/sway
-      '';
+      ExecStart = "${pkgs.sway}/bin/sway";
       Restart = "on-failure";
       RestartSec = 1;
       TimeoutStopSec = 10;

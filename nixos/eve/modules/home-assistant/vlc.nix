@@ -1,5 +1,23 @@
-{pkgs, ...}: {
+{ pkgs, ... }: {
   services.home-assistant.config = {
+    conversation.intents = {
+      PlayerStart = [
+        "start"
+        "play"
+      ];
+      PlayerPause = [
+        "pause"
+        "stop"
+      ];
+      PlayMinimix = [
+        "play minimix"
+        "play minimix radio"
+      ];
+      PlayBBC = [
+        "play BBC"
+        "play BBC radio"
+      ];
+    };
     sensor = [
       {
         name = "Random minimix";
@@ -38,6 +56,6 @@
       action.data_template.media_content_type = "music";
       action.data_template.media_content_id = "{{ states.sensor.bbc_world_news.state }}";
     };
-    vlc_telnet = {};
+    vlc_telnet = { };
   };
 }

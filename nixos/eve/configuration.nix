@@ -1,84 +1,80 @@
 # Edit this configuration file to define what should be installed on
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
-{
-  config,
-  pkgs,
-  lib,
-  ...
-}: {
-  #deployment.targetHost = "eve.thalheim.io";
+{ lib, ... }: {
   networking.hostName = "eve";
+  clan.networking.targetHost = "root@eve.i";
   networking.hostId = "8425e349";
 
   time.timeZone = "UTC";
-  i18n.defaultLocale = "en_DK.UTF-8";
 
   programs.vim.defaultEditor = true;
+
+  srvos.boot.consoles = lib.mkDefault [ ];
 
   imports = [
     # Include the results of the hardware scan.
     ./hardware-configuration.nix
     ./modules/adminer.nix
+    ./modules/atuin.nix
     ./modules/bitwarden.nix
-    ./modules/borgbackup
-    ./modules/dovecot.nix
-    ./modules/drone
+    ./modules/buildbot.nix
+    ./modules/dendrite.nix
+    ./modules/disko.nix
     ./modules/docker.nix
+    ./modules/dovecot.nix
     ./modules/ejabberd.nix
+    ./modules/ergo.nix
+    ./modules/et.nix
     ./modules/gitea
-    ./modules/gitlab/runner.nix
-    ./modules/grafana.nix
     ./modules/goatcounter.nix
+    ./modules/grafana.nix
+    ./modules/harmonia.nix
     ./modules/home-assistant
-    ./modules/influxdb.nix
-    ./modules/jetbrains-remote.nix
-    #./modules/k8s.nix
+    #./modules/kanidm.nix
     ./modules/knot
-    ./modules/navidrome.nix
-    ./modules/unbound.nix
     ./modules/mastodon-hnbot.nix
-    ./modules/mediawiki.nix
+    ./modules/navidrome.nix
     ./modules/network.nix
     ./modules/nextcloud.nix
     ./modules/nginx/default.nix
+    #./modules/nixos-wiki
     ./modules/openttd
+    ./modules/owncast.nix
     ./modules/packages.nix
     ./modules/postfix.nix
     ./modules/postgresql.nix
-    ./modules/rainloop.nix
-    ./modules/remote-builder.nix
     ./modules/redis.nix
+    ./modules/remote-builder.nix
+    ./modules/renovate
     ./modules/rspamd/rspamd.nix
+    ./modules/shadowsocks.nix
+    ./modules/shiori
+    ./modules/snappymail.nix
     ./modules/sshd.nix
-    ./modules/squid.nix
     ./modules/syncthing.nix
-    ./modules/sops.nix
     ./modules/teamspeak.nix
-    ./modules/telegraf.nix
     ./modules/tt-rss.nix
-    ./modules/tts.nix
+    ./modules/unbound.nix
     ./modules/users.nix
-    ./modules/wiki-backup.nix
-    #./modules/wiregrill
+    ./modules/wireguard.nix
+    ./modules/zerotier.nix
 
+    ../modules/borgbackup.nix
     ../modules/builder.nix
-    ../modules/fast-network.nix
     ../modules/iperf.nix
     ../modules/mosh.nix
+    ../modules/nix-ld.nix
+    ../modules/nncp.nix
     ../modules/openldap
+    ../modules/promtail.nix
     ../modules/rtorrent.nix
     ../modules/samba-dl.nix
-    ../modules/tor-ssh.nix
     ../modules/tracing.nix
-    ../modules/promtail.nix
-    #../modules/wezterm.nix
-    ../modules/wireguard.nix
-    ../modules/zfs.nix
+    ../modules/uptermd.nix
     ../modules/zsh.nix
-    ../modules/it4r-containers
   ];
 
   # The NixOS release to be compatible with for stateful data such as databases.
-  system.stateVersion = "18.03";
+  system.stateVersion = "23.11";
 }

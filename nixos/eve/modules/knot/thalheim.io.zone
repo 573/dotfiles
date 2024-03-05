@@ -1,7 +1,6 @@
-@ 3600 IN SOA thalheim.io. root.thalheim.io. 2022032300 7200 3600 86400 3600
+@ 3600 IN SOA thalheim.io. ns1.thalheim.io. 2023102500 7200 3600 86400 3600
 
-;;@ 3600 IN NS ns1
-@ 3600 IN NS ns2
+@ 3600 IN NS ns1
 @ 3600 IN NS ns2.he.net.
 @ 3600 IN NS ns3.he.net.
 @ 3600 IN NS ns4.he.net.
@@ -14,33 +13,33 @@ he IN NS ns2.he.net.
 he IN NS ns3.he.net.
 he IN NS ns4.he.net.
 he IN NS ns5.he.net.
-whoami4 IN NS ns2
-whoami6 IN NS ns2
 
-@ IN A 88.99.244.96
-@ IN AAAA 2a01:4f8:10b:49f::1
-eve IN A 88.99.244.96
-4.eve IN A 88.99.244.96
-eve IN AAAA 2a01:4f8:10b:49f::2
-6.eve IN AAAA 2a01:4f8:10b:49f::2
+@ IN A 95.217.199.121
+@ IN AAAA 2a01:4f9:4a:42e8::1
+eve IN A 95.217.199.121
+4.eve IN A 95.217.199.121
+eve IN AAAA 2a01:4f9:4a:42e8::1
+6.eve IN AAAA 2a01:4f9:4a:42e8::1
 
-eva IN A 131.159.102.4
-4.eva IN A 131.159.102.4
-eva IN AAAA 2a09:80c0:102::4
-6.eva IN AAAA 2a09:80c0:102::4
+eva IN A 89.58.27.144
+4.eva IN A 89.58.27.144
+eva IN AAAA 2a03:4000:62:fdb::
+6.eva IN AAAA 2a03:4000:62:fdb::
 
-git IN A 88.99.244.96
-git IN AAAA 2a01:4f8:10b:49f::1
-ns1 IN A 88.99.244.96
-ns1 IN AAAA 2a01:4f8:10b:49f::1
-ns2 IN A 88.99.244.96
-ns2 IN AAAA 2a01:4f8:10b:49f::1
-dns IN A 88.99.244.96
-dns IN AAAA 2a01:4f8:10b:49f::5
+git IN A 95.217.199.121
+git IN AAAA 2a01:4f9:4a:42e8::1
+ns1 IN A 95.217.199.121
+ns1 IN AAAA 2a01:4f9:4a:42e8::1
+ns2 IN A 95.217.199.121
+ns2 IN AAAA 2a01:4f9:4a:42e8::1
 
-www IN A 88.99.244.96
-www IN AAAA 2a01:4f8:10b:49f::1
+buildbot2 IN A 135.181.24.254
+
+www IN A 95.217.199.121
+www IN AAAA 2a01:4f9:4a:42e8::1
 * IN CNAME www
+
+dependable-virtualized-systems IN CNAME dependable-virtualized-systems.netlify.app.
 
 ip2 IN CNAME eva
 prometheus IN CNAME eva
@@ -48,104 +47,80 @@ alertmanager IN CNAME eva
 telegraf IN CNAME eva
 go-neb IN CNAME eva
 ;; needed because of acme challenge
-influxdb IN CNAME www
 anon IN CNAME www
 
 blog IN CNAME mic92.github.io.
 
-_acme-challenge IN NS ns2.thalheim.io.
-_acme-challenge.imap IN NS ns2.thalheim.io.
-_acme-challenge.mail IN NS ns2.thalheim.io.
-_acme-challenge.influxdb IN NS ns2.thalheim.io.
-_acme-challenge.anon IN NS ns2.thalheim.io.
-_acme-challenge.dns IN NS ns2.thalheim.io.
+_acme-challenge IN NS ns1.thalheim.io.
+_acme-challenge.imap IN NS ns1.thalheim.io.
+_acme-challenge.mail IN NS ns1.thalheim.io.
+_acme-challenge.anon IN NS ns1.thalheim.io.
+_acme-challenge.dns IN NS ns1.thalheim.io.
 
-jarvis IN NS ns2.thalheim.io.
-turingmachine IN NS ns2.thalheim.io.
-bernie IN NS ns2.thalheim.io.
-matchbox IN NS ns2.thalheim.io.
+turingmachine IN NS ns1.thalheim.io.
+bernie IN NS ns1.thalheim.io.
+matchbox IN NS ns1.thalheim.io.
+rauter IN NS ns1.thalheim.io.
+rock IN NS ns1.thalheim.io.
+blob64 IN NS ns1.thalheim.io.
+rauter IN NS ns1.thalheim.io.
 
 @ IN CAA 0 issue "letsencrypt.org"
 @ IN CAA 0 iodef "mailto:joerg.caa@thalheim.io"
 
 ;; University
-amy       IN A 129.215.165.57
-amy       IN AAAA 2001:630:3c1:164:b62e:99ff:fe3e:d369
-clara     IN A 129.215.165.58
-clara     IN AAAA 2001:630:3c1:164:b62e:99ff:fe3d:70f2
-dashboard IN A 129.215.91.109
-donna     IN A 129.215.91.68
-donna     IN AAAA 2001:630:3c1:164:6d4:c4ff:fe04:4ab8
-martha    IN A 129.215.165.53
-martha    IN AAAA 2001:630:3c1:164:6d4:c4ff:fe04:4aba
-rose      IN A 129.215.165.52
-rose      IN AAAA 2001:630:3c1:164:6d4:c4ff:fe04:4e4b
-doctor    IN A 129.215.165.108
-doctor    IN AAAA 2001:630:3c1:164:dea6:32ff:fe42:4f99
-sauron    IN A 129.215.165.75
-sauron    IN AAAA 2001:630:3c1:164:d65d:64ff:feb0:e8a8
-ryan      IN A 131.159.102.8
-ryan      IN AAAA 2a09:80c0:102::8
-graham    IN A 131.159.102.9
-graham    IN AAAA 2a09:80c0:102::9
-
-dimitra IN A 129.215.90.138
-dimitra IN TXT "c8:d9:d2:32:3b:28"
-idontcare IN A 129.215.91.216
-idontcare IN TXT "00:0e:c6:e2:11:fa"
-sascha IN A 129.215.91.153
-sascha IN TXT "a0:8c:fd:f1:44:23"
-pramod IN A 129.215.91.229
-
-;; VPN
-matchbox IN A 172.23.75.254
-rauter IN A 172.23.75.225
-fritzbox IN AAAA fd42:4492:6a6d:500:2665:11ff:fe80:52a3
-matchbox.ohorn IN AAAA fd42:4492:6a6d:500:ba27:ebff:feff:3dc5
-rauter IN AAAA 2001:470:1f0a:f8e::1
-eve.ohorn IN AAAA fd42:4492:6a6d:500:8526:2adf:7451:8bbb
-turingmachine.ohorn IN AAAA fd42:4492:6a6d:500:f610:15d1:27a3:674b
-
-archfeed IN CNAME arch-pkg-feed.herokuapp.com.
-githubtags IN CNAME github-tags-feed.herokuapp.com.
-reisekosten IN CNAME reisekosten.herokuapp.com.
+stable-diffusion CNAME jack.dse.in.tum.de.
+stable-confusion CNAME jack.dse.in.tum.de.
 
 ;; Mail
 @ IN MX 3 mail
-mail IN A 88.99.244.96
-mail IN AAAA 2a01:4f8:10b:49f::1
-imap IN A 88.99.244.96
-imap IN AAAA 2a01:4f8:10b:49f::1
+mail IN A 95.217.199.121
+mail IN AAAA 2a01:4f9:4a:42e8::1
+imap IN A 95.217.199.121
+imap IN AAAA 2a01:4f9:4a:42e8::1
+_mta-sts IN TXT "v=STSv1; id=20181027085700Z;"
+smtp._tls IN TXT "v=TLSRPTv1;rua=mailto:joerg.tls-report@thalheim.io"
+;
 _adsp._domainkey IN TXT "dkim=all;"
 default._domainkey IN TXT "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCgVpKyJL+JXhYefL05+wal58+PK1s5y1nf1uI7aguTbQFaM3wo3cs/7CaxBK1a+JNCd7f1sgmbdR17CzsiUUQO5GLsyl6bS4VGZv1XMMSuTdCpOT08iY0s9JikME6kPg9rxbo35ET9DtDDEqmgwbUcIfl/eD8G4jwTvyPYJPfFKQIDAQAB"
 _dmarc IN TXT "v=DMARC1; p=none; adkim=r; aspf=r; rua=mailto:joerc.dmarc@thalheim.io; ruf=mailto:joerg.dmarc@thalheim.io; pct=100"
-@ IN TXT "v=spf1 ip4:88.99.244.96 ip6:2a01:4f8:10b:49f::/64 -all"
+@ IN TXT "v=spf1 ip4:95.217.199.121 ip6:2a01:4f9:4a:42e8::/64 -all"
 
 _token._dnswl IN TXT "v6e9a15zje7o03w1oos9ashj258elvdh"
 @ IN TXT "google-site-verification=TGvlDYzS1IB0wcHO32Bnzfb5IVFbYm6Roeg27TU6XjY"
 _smtp._tls IN TXT "v=TLSRPTv1;rua=mailto:joerg.smtp-tls@thalheim.io"
 
 ;; XMPP
-jabber IN A 88.99.244.96
-jabber IN AAAA 2a01:4f8:10b:49f::1
+jabber IN A 95.217.199.121
+jabber IN AAAA 2a01:4f9:4a:42e8::1
 muc IN CNAME www
 _xmpp-client._tcp IN SRV 0 5 5222 jabber
 _xmpp-server._tcp IN SRV 0 5 5269 jabber
 _xmpp-server._tcp.muc IN SRV 0 5 5269 jabber
+;; Matrix
+matrix IN A 95.217.199.121
+matrix IN AAAA 2a01:4f9:4a:42e8::1
+_matrix._tcp IN SRV 0 5 443 matrix
+
+;; https://github.com/Mic92/nixos-wiki-infra
+nixos-wiki2 IN NS dns1.p01.nsone.net.
+nixos-wiki2 IN NS dns2.p01.nsone.net.
+nixos-wiki2 IN NS dns3.p01.nsone.net.
+nixos-wiki2 IN NS dns4.p01.nsone.net.
 
 ;; SSHFP Records
-@ IN SSHFP 1 1 307bf9d2a0066efcb78b7b243da920dc36d03060
-@ IN SSHFP 1 2 b31f94a8ab37255d4dca36f8e7b27044b96bed238e967ec220486c2596fc44d4
-@ IN SSHFP 4 1 3c6fcd32d8a16556af4d2f77470013184f2bc81a
-@ IN SSHFP 4 2 1b422e457dfec400db6a92cf9a7a5716d2ca2a7566a838545582891fb5d45de2
-eve IN SSHFP 1 1 307bf9d2a0066efcb78b7b243da920dc36d03060
-eve IN SSHFP 1 2 b31f94a8ab37255d4dca36f8e7b27044b96bed238e967ec220486c2596fc44d4
-eve IN SSHFP 4 1 3c6fcd32d8a16556af4d2f77470013184f2bc81a
-eve IN SSHFP 4 2 1b422e457dfec400db6a92cf9a7a5716d2ca2a7566a838545582891fb5d45de2
-git IN SSHFP 1 1 307bf9d2a0066efcb78b7b243da920dc36d03060
-git IN SSHFP 1 2 b31f94a8ab37255d4dca36f8e7b27044b96bed238e967ec220486c2596fc44d4
-git IN SSHFP 4 1 3c6fcd32d8a16556af4d2f77470013184f2bc81a
-git IN SSHFP 4 2 1b422e457dfec400db6a92cf9a7a5716d2ca2a7566a838545582891fb5d45de2
+@ IN SSHFP 1 1 183d8a19ce46d00f2a2bc8795088deb5d1154c46
+@ IN SSHFP 1 2 2bb2e95b3392f0b0f44d0a60e4cb1f21a1fbd06b01eb117d34c6610b869ba6a9
+@ IN SSHFP 4 1 96750ca52c9f8daf87e4357bab14c029db1d5da1
+@ IN SSHFP 4 2 a9f03d1083f98cf257561ee97ea2086e2d308c5ece581e42bd35f6c2ed114ac4
+eve IN SSHFP 1 1 183d8a19ce46d00f2a2bc8795088deb5d1154c46
+eve IN SSHFP 1 2 2bb2e95b3392f0b0f44d0a60e4cb1f21a1fbd06b01eb117d34c6610b869ba6a9
+eve IN SSHFP 4 1 96750ca52c9f8daf87e4357bab14c029db1d5da1
+eve IN SSHFP 4 2 a9f03d1083f98cf257561ee97ea2086e2d308c5ece581e42bd35f6c2ed114ac4
+git IN SSHFP 1 1 183d8a19ce46d00f2a2bc8795088deb5d1154c46
+git IN SSHFP 1 2 2bb2e95b3392f0b0f44d0a60e4cb1f21a1fbd06b01eb117d34c6610b869ba6a9
+git IN SSHFP 4 1 96750ca52c9f8daf87e4357bab14c029db1d5da1
+git IN SSHFP 4 2 a9f03d1083f98cf257561ee97ea2086e2d308c5ece581e42bd35f6c2ed114ac4
 
 ;; Keybase & GPG
 joerg._pka IN TXT "v=pka1;fpr=4ABA07382AD57E6B9AA4E88DCA4106B8D7CC79FA;uri=https://thalheim.io/joerg/joerg.asc"
